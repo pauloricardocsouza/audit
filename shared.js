@@ -167,6 +167,7 @@
       sidebar.innerHTML = `
         <div class="r2a-sb-head">
           <a href="${rel('index.html')}" class="r2a-sb-brand">
+            <img class="r2a-sb-logo-img" src="${rel('logoR2azul.png')}" alt="R2 Soluções Empresariais">
             <div class="r2a-sb-logo">R²</div>
             <span class="r2a-sb-name">${CFG.APP_NAME}</span>
           </a>

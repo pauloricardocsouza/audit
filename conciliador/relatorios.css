@@ -130,17 +130,12 @@
 }
 
 .r2a-rel-brand-logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: block;
+  max-width: 180px;
+  max-height: 40px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
 .r2a-rel-brand-title {

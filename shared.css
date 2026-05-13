@@ -128,7 +128,7 @@ h3 { font-size: 15px; }
 .r2a-sb-head {
   display: flex;
   align-items: center;
-  padding: 14px 16px;
+  padding: 14px 14px 12px;
   border-bottom: 1px solid var(--border);
   gap: 10px;
   background: var(--accent-bg);
@@ -146,25 +146,34 @@ h3 { font-size: 15px; }
 
 .r2a-sb-brand {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   text-decoration: none;
   color: var(--accent-text);
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: -0.01em;
   flex: 1;
   overflow: hidden;
   position: relative;
   z-index: 1;
 }
 
+/* Logo horizontal (expandida) */
+.r2a-sb-logo-img {
+  display: block;
+  max-width: 150px;
+  max-height: 30px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Fallback "R²" quadrado (colapsada) */
 .r2a-sb-logo {
+  display: none;
   width: 30px;
   height: 30px;
   border-radius: 8px;
   background: linear-gradient(135deg, var(--primary), var(--highlight));
-  display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
@@ -174,7 +183,15 @@ h3 { font-size: 15px; }
   box-shadow: 0 2px 6px rgba(46,71,111,0.25);
 }
 
-.r2a-sb-name { white-space: nowrap; }
+.r2a-sb-name {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
 
 .r2a-sb-toggle {
   background: transparent;
@@ -322,6 +339,7 @@ h3 { font-size: 15px; }
 
 /* SIDEBAR COLLAPSED */
 .r2a-sidebar.collapsed .r2a-sb-name,
+.r2a-sidebar.collapsed .r2a-sb-logo-img,
 .r2a-sidebar.collapsed .r2a-sb-label,
 .r2a-sidebar.collapsed .r2a-sb-caret,
 .r2a-sidebar.collapsed .r2a-sb-section,
@@ -331,8 +349,10 @@ h3 { font-size: 15px; }
   display: none;
 }
 
+.r2a-sidebar.collapsed .r2a-sb-logo { display: flex; }
+
 .r2a-sidebar.collapsed .r2a-sb-head { padding: 14px 8px; justify-content: center; }
-.r2a-sidebar.collapsed .r2a-sb-brand { justify-content: center; }
+.r2a-sidebar.collapsed .r2a-sb-brand { justify-content: center; align-items: center; }
 .r2a-sidebar.collapsed .r2a-sb-item,
 .r2a-sidebar.collapsed .r2a-sb-module-head {
   justify-content: center;
