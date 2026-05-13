@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Processamento · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.8">
+</head>
+<body>
+<div class="r2a-shell">
+
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+<div class="r2a-placeholder">
+    <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.4;">⇪</div>
+    <h2>Processamento</h2>
+    <p>Esta tela ainda não foi implementada. Voltaremos a ela depois que a tela de Conciliação estiver validada.</p>
+    <a href="conciliacao.html" class="btn btn-primary">Ir para Conciliação</a>
+  </div>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+
+</div>
+<script src="../config.js?v=0.8"></script>
+<script src="../shared.js?v=0.8"></script>
+<script>
+  if (R2A.requireAuth()) {
+    R2A.renderShell({ modulo: 'conciliador', item: 'processamento' });
+    R2A.renderFooter();
+  }
+</script>
+</body>
+</html>

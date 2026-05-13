@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatórios · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.8">
+<link rel="stylesheet" href="relatorios.css?v=0.8">
+</head>
+<body>
+
+<div class="r2a-shell">
+
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+<section class="r2a-rel">
+
+    <!-- SELETOR DE TIPO -->
+    <div class="r2a-rel-types">
+      <div class="r2a-rel-type active" data-tipo="conciliacao">
+        <div class="r2a-rel-type-icon">≡</div>
+        <div class="r2a-rel-type-info">
+          <div class="r2a-rel-type-title">Relatório de Conciliação</div>
+          <div class="r2a-rel-type-sub">Todos os lançamentos com seus status no período</div>
+        </div>
+      </div>
+      <div class="r2a-rel-type" data-tipo="pendencias">
+        <div class="r2a-rel-type-icon">⚠</div>
+        <div class="r2a-rel-type-info">
+          <div class="r2a-rel-type-title">Relatório de Pendências</div>
+          <div class="r2a-rel-type-sub">Apenas lançamentos não conciliados</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="r2a-rel-filters">
+      <div class="filter-group">
+        <span class="filter-label">Conta</span>
+        <select id="rel-conta"><option value="all">Todas</option></select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Período</span>
+        <input type="date" id="rel-ini" value="2026-05-01">
+        <span style="color: var(--muted); font-size: 11px;">até</span>
+        <input type="date" id="rel-fim" value="2026-05-31">
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Status</span>
+        <select id="rel-status">
+          <option value="all">Todos</option>
+          <option value="conciliado">Conciliados</option>
+          <option value="pendente">Pendentes</option>
+          <option value="ambiguo">Ambíguos</option>
+          <option value="justificado">Justificados</option>
+          <option value="ignorado">Ignorados</option>
+          <option value="analise">Em análise</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="seg-toggle">
+          <button data-range="mes-atual">Mês atual</button>
+          <button data-range="mes-anterior">Mês anterior</button>
+          <button data-range="30d">30 dias</button>
+          <button data-range="90d">90 dias</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREVIEW DO RELATÓRIO -->
+    <div class="r2a-rel-preview">
+
+      <!-- Cabeçalho institucional -->
+      <div class="r2a-rel-preview-header">
+        <div class="r2a-rel-brand">
+          <div class="r2a-rel-brand-logo">R²</div>
+          <div>
+            <div class="r2a-rel-brand-title">R2 SOLUÇÕES EMPRESARIAIS</div>
+            <div class="r2a-rel-brand-name" id="rel-titulo">Relatório de Conciliação</div>
+          </div>
+        </div>
+        <div class="r2a-rel-meta">
+          <strong id="rel-meta-conta">—</strong>
+          <span id="rel-meta-periodo">—</span><br>
+          <span id="rel-meta-gerado">—</span>
+        </div>
+      </div>
+
+      <!-- Resumo -->
+      <div class="r2a-rel-resumo">
+        <div class="r2a-rel-resumo-item">
+          <span class="r2a-rel-resumo-label">Total</span>
+          <span class="r2a-rel-resumo-value" id="rel-r-total-qtd">0</span>
+          <span class="r2a-rel-resumo-label" id="rel-r-total-val">R$ 0,00</span>
+        </div>
+        <div class="r2a-rel-resumo-item">
+          <span class="r2a-rel-resumo-label">Conciliados</span>
+          <span class="r2a-rel-resumo-value success" id="rel-r-conc-qtd">0</span>
+          <span class="r2a-rel-resumo-label" id="rel-r-conc-val">R$ 0,00</span>
+        </div>
+        <div class="r2a-rel-resumo-item">
+          <span class="r2a-rel-resumo-label">Pendentes</span>
+          <span class="r2a-rel-resumo-value warning" id="rel-r-pend-qtd">0</span>
+          <span class="r2a-rel-resumo-label" id="rel-r-pend-val">R$ 0,00</span>
+        </div>
+        <div class="r2a-rel-resumo-item">
+          <span class="r2a-rel-resumo-label">Período</span>
+          <span class="r2a-rel-resumo-value" id="rel-r-periodo-dias">—</span>
+          <span class="r2a-rel-resumo-label">dias úteis</span>
+        </div>
+        <div class="r2a-rel-resumo-item">
+          <span class="r2a-rel-resumo-label">Contas</span>
+          <span class="r2a-rel-resumo-value" id="rel-r-contas">—</span>
+          <span class="r2a-rel-resumo-label">no relatório</span>
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="r2a-rel-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Conta</th>
+              <th>Descrição</th>
+              <th class="num">Valor</th>
+              <th class="center">Tipo</th>
+              <th class="center">Status</th>
+            </tr>
+          </thead>
+          <tbody id="rel-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Ações -->
+      <div class="r2a-rel-actions">
+        <span class="info" id="rel-info">0 linha(s)</span>
+        <button class="btn" id="btn-pdf">⤓ Exportar PDF</button>
+        <button class="btn btn-primary" id="btn-excel">⤓ Exportar Excel</button>
+      </div>
+
+    </div>
+
+  </section>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+
+</div>
+
+<!-- Bibliotecas de exportação -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
+
+<script src="../config.js?v=0.8"></script>
+<script src="../shared.js?v=0.8"></script>
+<script src="../mock-data.js?v=0.8"></script>
+<script src="../data.js?v=0.8"></script>
+<script src="relatorios.js?v=0.8"></script>
+
+</body>
+</html>

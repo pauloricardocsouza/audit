@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.8">
+<link rel="stylesheet" href="dashboard.css?v=0.8">
+</head>
+<body>
+
+<div class="r2a-shell">
+
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+<section class="r2a-dash">
+
+    <!-- FILTROS -->
+    <div class="r2a-dash-filters">
+      <div class="filter-group">
+        <span class="filter-label">Conta</span>
+        <select id="dash-conta"><option value="all">Todas</option></select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Período</span>
+        <input type="date" id="dash-ini" value="2026-05-01">
+        <span style="color: var(--muted); font-size: 11px;">até</span>
+        <input type="date" id="dash-fim" value="2026-05-31">
+      </div>
+      <div class="filter-group">
+        <div class="seg-toggle">
+          <button data-range="mes-atual">Mês atual</button>
+          <button data-range="mes-anterior">Mês anterior</button>
+          <button data-range="30d">30 dias</button>
+          <button data-range="90d">90 dias</button>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost" id="btn-dash-limpar">Limpar</button>
+    </div>
+
+    <!-- KPIs GRANDES -->
+    <div class="r2a-kpi-grid">
+      <div class="r2a-kpi success">
+        <div class="r2a-kpi-label">Taxa de conciliação</div>
+        <div class="r2a-kpi-value success" id="kpi-pct">0%</div>
+        <div class="r2a-kpi-sub" id="kpi-pct-sub">0 de 0 lançamentos</div>
+      </div>
+      <div class="r2a-kpi info">
+        <div class="r2a-kpi-label">Valor conciliado</div>
+        <div class="r2a-kpi-value info" id="kpi-conc-val">R$ 0,00</div>
+        <div class="r2a-kpi-sub" id="kpi-conc-qtd">0 lançamento(s)</div>
+      </div>
+      <div class="r2a-kpi warning">
+        <div class="r2a-kpi-label">Valor pendente</div>
+        <div class="r2a-kpi-value warning" id="kpi-pend-val">R$ 0,00</div>
+        <div class="r2a-kpi-sub" id="kpi-pend-qtd">0 lançamento(s)</div>
+      </div>
+      <div class="r2a-kpi">
+        <div class="r2a-kpi-label">Volume total no período</div>
+        <div class="r2a-kpi-value" id="kpi-total-val">R$ 0,00</div>
+        <div class="r2a-kpi-sub" id="kpi-total-qtd">0 lançamento(s)</div>
+      </div>
+    </div>
+
+    <!-- GRÁFICOS · LINHA 1 -->
+    <div class="r2a-charts-grid">
+
+      <!-- DONUT -->
+      <div class="r2a-chart-card">
+        <div class="r2a-chart-header">
+          <span class="r2a-chart-title">◐ Status no período</span>
+          <span class="r2a-chart-sub">Distribuição por status</span>
+        </div>
+        <div class="r2a-donut-wrap">
+          <canvas id="chart-donut"></canvas>
+          <div class="r2a-donut-center">
+            <div class="pct" id="donut-pct">0%</div>
+            <div class="label">conciliados</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BARRAS POR CONTA -->
+      <div class="r2a-chart-card">
+        <div class="r2a-chart-header">
+          <span class="r2a-chart-title">⬢ Conciliação por conta</span>
+          <span class="r2a-chart-sub">% conciliado por conta bancária</span>
+        </div>
+        <div class="r2a-chart-body">
+          <canvas id="chart-por-conta"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- LINHA · EVOLUÇÃO MENSAL -->
+    <div class="r2a-chart-card full">
+      <div class="r2a-chart-header">
+        <span class="r2a-chart-title">↗ Evolução mensal</span>
+        <span class="r2a-chart-sub">Últimos 12 meses · lançamentos e % de conciliação</span>
+      </div>
+      <div class="r2a-chart-body tall">
+        <canvas id="chart-evolucao"></canvas>
+      </div>
+    </div>
+
+  </section>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script src="../config.js?v=0.8"></script>
+<script src="../shared.js?v=0.8"></script>
+<script src="../mock-data.js?v=0.8"></script>
+<script src="../data.js?v=0.8"></script>
+<script src="dashboard.js?v=0.8"></script>
+
+</body>
+</html>

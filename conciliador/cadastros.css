@@ -1,0 +1,225 @@
+/* ============================================================
+   R2 Conciliador · cadastros.css
+   ============================================================ */
+
+/* SUB-TABS */
+.r2a-subtabs {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex;
+  gap: 2px;
+  position: sticky;
+  top: var(--topbar-h, 48px);
+  z-index: 40;
+}
+
+.r2a-subtab {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  margin-bottom: -1px;
+}
+
+.r2a-subtab:hover { color: var(--text); }
+
+.r2a-subtab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+
+.r2a-subtab .badge {
+  background: var(--neutral-bg);
+  color: var(--text-2);
+  padding: 1px 8px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.r2a-subtab.active .badge {
+  background: var(--info-bg);
+  color: var(--primary);
+}
+
+.r2a-subtab.locked { opacity: 0.5; cursor: not-allowed; }
+
+/* CONTENT AREA */
+.r2a-tab-content {
+  flex: 1;
+  padding: 20px;
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+.r2a-tab-content.hidden { display: none; }
+
+/* TOOLBAR */
+.r2a-tab-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.r2a-tab-toolbar .search {
+  width: 260px;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.r2a-tab-toolbar .spacer { flex: 1; }
+
+.r2a-tab-toolbar .count {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* DATA TABLE */
+.r2a-data-tbl {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.r2a-data-tbl table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.r2a-data-tbl thead th {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.r2a-data-tbl thead th.right { text-align: right; }
+.r2a-data-tbl thead th.center { text-align: center; }
+
+.r2a-data-tbl tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.r2a-data-tbl tbody tr:last-child { border-bottom: 0; }
+.r2a-data-tbl tbody tr:hover { background: var(--surface-2); }
+.r2a-data-tbl tbody tr.inactive { opacity: 0.55; }
+
+.r2a-data-tbl tbody td {
+  padding: 11px 14px;
+  color: var(--text);
+  vertical-align: middle;
+}
+.r2a-data-tbl tbody td.right { text-align: right; }
+.r2a-data-tbl tbody td.center { text-align: center; }
+
+.r2a-row-actions {
+  display: inline-flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.r2a-icon-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.r2a-icon-btn:hover { background: var(--neutral-bg); color: var(--text); border-color: var(--border); }
+.r2a-icon-btn.danger:hover { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+
+/* FORM IN MODAL */
+.r2a-form { display: grid; gap: 14px; }
+.r2a-form .field { display: flex; flex-direction: column; gap: 4px; }
+.r2a-form .field input,
+.r2a-form .field select,
+.r2a-form .field textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.r2a-form .field textarea { min-height: 70px; resize: vertical; font-family: inherit; }
+.r2a-form .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.r2a-form-error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  display: none;
+}
+.r2a-form-error.show { display: block; }
+
+/* EMPTY */
+.r2a-data-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: white;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.r2a-data-empty .icon { font-size: 36px; margin-bottom: 8px; opacity: 0.4; }
+.r2a-data-empty .title { font-size: 14px; color: var(--text); margin-bottom: 4px; font-weight: 600; }
+.r2a-data-empty .sub { font-size: 12px; margin-bottom: 16px; }
+
+/* PERFIL PILL */
+.pill.admin { background: var(--violet-bg); color: var(--violet); }
+.pill.operador { background: var(--info-bg); color: var(--info); }
+
+/* TIPO DE CONTA PILL */
+.pill.tipo-corrente     { background: var(--info-bg); color: var(--info); }
+.pill.tipo-garantida    { background: var(--warning-bg); color: var(--warning); }
+.pill.tipo-vinculada    { background: var(--violet-bg); color: var(--violet); }
+.pill.tipo-investimento { background: var(--success-bg); color: var(--success); }
+
+/* LOCKED MESSAGE */
+.r2a-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: white;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--muted);
+  font-size: 13px;
+  flex-direction: column;
+  gap: 6px;
+}
+.r2a-locked .icon { font-size: 24px; opacity: 0.6; }

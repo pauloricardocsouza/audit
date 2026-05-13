@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastros · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.8">
+<link rel="stylesheet" href="cadastros.css?v=0.8">
+</head>
+<body>
+
+<div class="r2a-shell">
+
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+<!-- SUB-NAVEGAÇÃO -->
+  <nav class="r2a-subtabs">
+    <button class="r2a-subtab active" data-tab="contas">
+      ⬢ Contas bancárias
+      <span class="badge" id="badge-contas">0</span>
+    </button>
+    <button class="r2a-subtab" data-tab="categorias">
+      ◆ Categorias
+      <span class="badge" id="badge-categorias">0</span>
+    </button>
+    <button class="r2a-subtab" data-tab="usuarios">
+      ☰ Usuários
+      <span class="badge" id="badge-usuarios">0</span>
+    </button>
+  </nav>
+
+  <!-- ABA CONTAS -->
+  <section class="r2a-tab-content" id="tab-contas">
+    <div class="r2a-tab-toolbar">
+      <input type="text" class="search" id="search-contas" placeholder="Buscar por apelido, banco ou número...">
+      <span class="spacer"></span>
+      <button class="btn btn-primary" id="btn-new-conta">+ Nova conta</button>
+    </div>
+    <div id="list-contas"></div>
+  </section>
+
+  <!-- ABA CATEGORIAS -->
+  <section class="r2a-tab-content hidden" id="tab-categorias">
+    <div class="r2a-tab-toolbar">
+      <input type="text" class="search" id="search-categorias" placeholder="Buscar categoria...">
+      <span class="spacer"></span>
+      <button class="btn btn-primary" id="btn-new-categoria">+ Nova categoria</button>
+    </div>
+    <div id="list-categorias"></div>
+  </section>
+
+  <!-- ABA USUÁRIOS -->
+  <section class="r2a-tab-content hidden" id="tab-usuarios">
+    <div class="r2a-tab-toolbar">
+      <input type="text" class="search" id="search-usuarios" placeholder="Buscar por nome ou e-mail...">
+      <span class="spacer"></span>
+      <button class="btn btn-primary" id="btn-new-usuario">+ Novo usuário</button>
+    </div>
+    <div id="list-usuarios"></div>
+  </section>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+
+</div>
+
+<!-- MODAL DE CADASTRO -->
+<div class="r2a-modal-backdrop" id="modal">
+  <div class="r2a-modal">
+    <div class="r2a-modal-header">
+      <h3 class="r2a-modal-title" id="modal-title">Cadastro</h3>
+      <button class="r2a-modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="r2a-modal-body" id="modal-body"></div>
+    <div class="r2a-modal-footer">
+      <button class="btn" id="modal-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="modal-confirm">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../config.js?v=0.8"></script>
+<script src="../shared.js?v=0.8"></script>
+<script src="../mock-data.js?v=0.8"></script>
+<script src="../data.js?v=0.8"></script>
+<script src="cadastros.js?v=0.8"></script>
+</body>
+</html>

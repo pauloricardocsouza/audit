@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conciliação · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.8">
+<link rel="stylesheet" href="conciliacao.css?v=0.8">
+</head>
+<body>
+
+<div class="r2a-shell">
+
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+<!-- FILTROS -->
+  <section class="r2a-filters">
+    <div class="filter-group">
+      <span class="filter-label">Conta</span>
+      <select id="filter-conta"><option value="all">Todas</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Período</span>
+      <input type="date" id="filter-ini" value="2026-05-01">
+      <span style="color: var(--muted); font-size: 11px;">até</span>
+      <input type="date" id="filter-fim" value="2026-05-31">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Movimento</span>
+      <div class="seg-toggle" id="movimento-toggle">
+        <button class="active" data-mov="todos">Todos</button>
+        <button data-mov="credito">Créditos</button>
+        <button data-mov="debito">Débitos</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Status</span>
+      <select id="filter-status">
+        <option value="all">Todos</option>
+        <option value="pendente">Pendentes</option>
+        <option value="conciliado">Conciliados</option>
+        <option value="ambiguo">Ambíguos</option>
+        <option value="justificado">Justificados</option>
+        <option value="ignorado">Ignorados</option>
+        <option value="analise">Em análise</option>
+      </select>
+    </div>
+    <div class="r2a-filters-right">
+      <button class="btn btn-ghost" id="btn-limpar">Limpar</button>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="r2a-stats">
+    <div class="r2a-stat">
+      <span class="r2a-stat-label">Total Banco</span>
+      <span class="r2a-stat-value" id="stat-banco-qtd">0</span>
+      <span class="r2a-stat-sub" id="stat-banco-val">R$ 0,00</span>
+    </div>
+    <div class="r2a-stat">
+      <span class="r2a-stat-label">Total Sistema</span>
+      <span class="r2a-stat-value" id="stat-sia-qtd">0</span>
+      <span class="r2a-stat-sub" id="stat-sia-val">R$ 0,00</span>
+    </div>
+    <div class="r2a-stat">
+      <span class="r2a-stat-label">Conciliados</span>
+      <span class="r2a-stat-value success" id="stat-conc-qtd">0</span>
+      <span class="r2a-stat-sub" id="stat-conc-pct">0% conciliação</span>
+    </div>
+    <div class="r2a-stat">
+      <span class="r2a-stat-label">Pendentes</span>
+      <span class="r2a-stat-value warning" id="stat-pend-qtd">0</span>
+      <span class="r2a-stat-sub" id="stat-pend-val">R$ 0,00</span>
+    </div>
+    <div class="r2a-stat">
+      <span class="r2a-stat-label">Ambíguos</span>
+      <span class="r2a-stat-value danger" id="stat-amb-qtd">0</span>
+      <span class="r2a-stat-sub">requer revisão</span>
+    </div>
+    <div class="r2a-stat">
+      <span class="r2a-stat-label">Diferença</span>
+      <span class="r2a-stat-value muted" id="stat-diff">R$ 0,00</span>
+      <span class="r2a-stat-sub">banco vs sistema</span>
+    </div>
+  </section>
+
+  <!-- AÇÕES -->
+  <section class="r2a-actions">
+    <button class="btn btn-primary" id="btn-wave1">▶ Onda 1 · 1:1</button>
+    <button class="btn btn-primary" id="btn-wave2">▶ Onda 2 · 1:N</button>
+    <span class="r2a-actions-divider"></span>
+    <button class="btn btn-success" id="btn-match-manual" disabled>✓ Conciliar selecionados</button>
+    <button class="btn" id="btn-ignorar">Ignorar</button>
+    <button class="btn" id="btn-justificar">Justificar</button>
+    <button class="btn" id="btn-analise">Em análise</button>
+    <span class="r2a-actions-divider"></span>
+    <button class="btn btn-danger-ghost" id="btn-reverter-sel">↶ Reverter</button>
+    <button class="btn btn-danger-ghost" id="btn-reverter-tudo">↶ Reverter tudo</button>
+    <div class="r2a-actions-spacer"></div>
+    <div class="r2a-selection-info empty" id="selection-info">Nenhuma seleção</div>
+  </section>
+
+  <!-- WORKSPACE -->
+  <section class="r2a-workspace">
+    <section class="r2a-panel">
+      <header class="r2a-panel-header">
+        <span class="r2a-panel-title bank">⬢ Banco</span>
+        <span class="r2a-panel-badge" id="badge-banco">0 lançamentos</span>
+        <input type="text" class="r2a-panel-search" placeholder="Buscar histórico..." id="search-banco">
+      </header>
+      <div class="r2a-panel-body">
+        <table class="tbl" id="tbl-banco">
+          <thead>
+            <tr>
+              <th class="row-check"><input type="checkbox" id="check-all-banco"></th>
+              <th>Data</th>
+              <th>Histórico</th>
+              <th class="num">Valor</th>
+              <th class="center">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-banco"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="r2a-panel">
+      <header class="r2a-panel-header">
+        <span class="r2a-panel-title sia">◆ Sistema SIA</span>
+        <span class="r2a-panel-badge" id="badge-sia">0 lançamentos</span>
+        <input type="text" class="r2a-panel-search" placeholder="Buscar descrição..." id="search-sia">
+      </header>
+      <div class="r2a-panel-body">
+        <table class="tbl" id="tbl-sia">
+          <thead>
+            <tr>
+              <th class="row-check"><input type="checkbox" id="check-all-sia"></th>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th class="num">Valor</th>
+              <th class="center">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-sia"></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="r2a-modal-backdrop" id="modal">
+  <div class="r2a-modal">
+    <div class="r2a-modal-header">
+      <h3 class="r2a-modal-title" id="modal-title">Resolver</h3>
+      <button class="r2a-modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="r2a-modal-body" id="modal-body"></div>
+    <div class="r2a-modal-footer">
+      <button class="btn" id="modal-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="modal-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../config.js?v=0.8"></script>
+<script src="../shared.js?v=0.8"></script>
+<script src="../mock-data.js?v=0.8"></script>
+<script src="conciliacao.js?v=0.8"></script>
+</body>
+</html>
