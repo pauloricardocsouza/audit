@@ -177,7 +177,111 @@
   };
 
   // ----------------------------------------------------------
-  // KPIs agregados (todos os contratos)
+  // KPIs do Dashboard · Fase 6
+  // Recebe contratos + lancamentos e retorna um pacote consolidado:
+  //  - totais (principal, líquido, saldo devedor estimado)
+  //  - parcelas (previstas, pagas, em atraso, próximas 30d)
+  //  - composições (por banco, por indexador)
+  //  - pagamentos projetados nos próximos 12 meses
+  //  - lista priorizada de pendências (atraso + vencimento ≤ 7d)
+  // ----------------------------------------------------------
+  R2A.contratos.kpisDashboard = function (contratos, lancamentos) {
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    const limite30 = new Date(hoje); limite30.setDate(limite30.getDate() + 30);
+    const limite7  = new Date(hoje); limite7.setDate(limite7.getDate() + 7);
+
+    let totalPrincipal = 0;
+    let totalLiquido = 0;
+    let totalPago = 0;
+    let totalProx30 = 0;
+    let totalAtraso = 0;
+    let qtdAtraso = 0;
+    let qtdProx30 = 0;
+
+    const porBanco = new Map();        // banco -> { qtd, principal }
+    const porIndex = new Map();        // 'CDI' / 'pré-fixado' / etc -> principal
+    const mesesProj = new Map();       // 'YYYY-MM' -> valor projetado
+    const pendencias = [];             // parcelas em atraso / próximas 7d
+
+    contratos.forEach(c => {
+      totalPrincipal += c.valores.principal || 0;
+      totalLiquido   += c.valores.liquido_liberado || 0;
+
+      // Composição por banco
+      const bkey = c.banco;
+      if (!porBanco.has(bkey)) porBanco.set(bkey, { qtd: 0, principal: 0 });
+      const bb = porBanco.get(bkey);
+      bb.qtd++; bb.principal += c.valores.principal || 0;
+
+      // Composição por indexador
+      const ikey = (c.taxa_juros && c.taxa_juros.indexador) ? c.taxa_juros.indexador : 'Pré-fixado';
+      porIndex.set(ikey, (porIndex.get(ikey) || 0) + (c.valores.principal || 0));
+
+      // Match das parcelas
+      const parcelas = R2A.contratos.matchParcelas(c, lancamentos);
+      parcelas.forEach(p => {
+        if (p.tipo === 'carencia' || p.valor === 0) return;
+        const venc = new Date(p.vencimento + 'T00:00:00');
+
+        // Pago: soma do que foi efetivamente debitado
+        if (p.pago) totalPago += p.pago.valor;
+
+        // Em atraso: vencimento < hoje e não pago
+        if (!p.pago && venc < hoje) {
+          totalAtraso += p.valor;
+          qtdAtraso++;
+          pendencias.push({ tipo: 'atraso', parcela: p, contrato: c, diasAtraso: Math.ceil((hoje - venc) / 86400000) });
+        }
+        // Próximos 30 dias: vencimento entre hoje e +30, não pago
+        else if (!p.pago && venc >= hoje && venc <= limite30) {
+          totalProx30 += p.valor;
+          qtdProx30++;
+          if (venc <= limite7) {
+            pendencias.push({ tipo: 'proxima', parcela: p, contrato: c, diasParaVencer: Math.ceil((venc - hoje) / 86400000) });
+          }
+        }
+
+        // Projeção mensal · 12 meses à frente, soma do valor previsto (independente de pago)
+        const mesKey = p.vencimento.slice(0, 7);
+        mesesProj.set(mesKey, (mesesProj.get(mesKey) || 0) + p.valor);
+      });
+    });
+
+    // Próximos 12 meses ordenados
+    const mesesArr = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+      const k = d.toISOString().slice(0, 7);
+      mesesArr.push({ mes: k, valor: mesesProj.get(k) || 0 });
+    }
+
+    // Ordenação das pendências: atrasos primeiro (mais antigos), depois próximas
+    pendencias.sort((a, b) => {
+      if (a.tipo !== b.tipo) return a.tipo === 'atraso' ? -1 : 1;
+      if (a.tipo === 'atraso') return (b.diasAtraso || 0) - (a.diasAtraso || 0);
+      return (a.diasParaVencer || 0) - (b.diasParaVencer || 0);
+    });
+
+    return {
+      totalPrincipal,
+      totalLiquido,
+      totalPago,
+      saldoDevedor: Math.max(0, totalPrincipal - totalPago),
+      totalProx30,
+      qtdProx30,
+      totalAtraso,
+      qtdAtraso,
+      porBanco: Array.from(porBanco.entries()).map(([banco, v]) => ({ banco, ...v })).sort((a, b) => b.principal - a.principal),
+      porIndex: Array.from(porIndex.entries()).map(([indexador, valor]) => ({ indexador, valor })).sort((a, b) => b.valor - a.valor),
+      mesesProj: mesesArr,
+      pendencias: pendencias.slice(0, 12),
+      qtdContratos: contratos.length,
+      qtdAtivos: contratos.filter(c => c.estado === 'ativo').length
+    };
+  };
+
+  // ----------------------------------------------------------
+  // KPIs simples (já existente, mantido)
   // ----------------------------------------------------------
   R2A.contratos.kpis = function (contratos) {
     const total = contratos.length;

@@ -4,19 +4,59 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Análise de Contratos · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.14">
-<link rel="stylesheet" href="../shared.css?v=0.14">
-<link rel="stylesheet" href="contratos.css?v=0.14">
+<link rel="stylesheet" href="../styles/theme.css?v=0.15">
+<link rel="stylesheet" href="../shared.css?v=0.15">
+<link rel="stylesheet" href="contratos.css?v=0.15">
+<style>
+  .ctd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 1100px) { .ctd-charts { grid-template-columns: 1fr; } }
+  .ctd-chart-body { position: relative; height: 240px; }
+  .ctd-chart-body.tall { height: 280px; }
+
+  .ctd-pend-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .ctd-pend-table thead th {
+    background: var(--navy-tint);
+    padding: 10px 16px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-4);
+    font-weight: 600;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .ctd-pend-table thead th.num    { text-align: right; }
+  .ctd-pend-table thead th.center { text-align: center; }
+  .ctd-pend-table tbody td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--line-2);
+    color: var(--ink-2);
+  }
+  .ctd-pend-table tbody tr:last-child td { border-bottom: 0; }
+  .ctd-pend-table tbody tr:hover { background: var(--navy-tint); }
+  .ctd-pend-table tbody tr { cursor: pointer; }
+  .ctd-pend-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink-1); }
+  .ctd-pend-table tr.atraso td.dias { color: var(--err); font-weight: 600; }
+  .ctd-pend-table tr.proxima td.dias { color: var(--warn); font-weight: 600; }
+
+  .ctd-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12.5px; }
+  .ctd-bar-row .lbl { min-width: 120px; color: var(--ink-2); font-weight: 500; }
+  .ctd-bar-row .track { flex: 1; height: 8px; background: var(--line-2); border-radius: 999px; overflow: hidden; }
+  .ctd-bar-row .track .fill { height: 100%; background: var(--navy); border-radius: 999px; transition: width 0.3s; }
+  .ctd-bar-row .val { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-1); min-width: 80px; text-align: right; }
+  .ctd-bar-row .pct { font-family: var(--font-mono); font-size: 11px; color: var(--ink-4); min-width: 50px; text-align: right; }
+</style>
 </head>
 <body>
 
-<div class="r2a-shell">
-  <aside class="r2a-sidebar"></aside>
+<div class="r2a-shell r2-app">
+  <aside class="r2a-sidebar r2-side"></aside>
 
-  <div class="r2a-main">
-    <header class="r2a-topbar"></header>
+  <div class="r2a-main r2-main">
+    <header class="r2a-topbar r2-top"></header>
 
-    <div class="r2a-content">
+    <div class="r2a-content r2-content">
       <section class="ct-wrap">
 
         <div class="ct-page-head">
@@ -25,130 +65,313 @@
             <p>Visão consolidada da carteira de empréstimos e dívida estruturada.</p>
           </div>
           <div class="ct-page-actions">
-            <a href="upload.html" class="btn btn-primary">+ Importar contrato</a>
+            <a href="contratos.html" class="r2-btn r2-btn--ghost">Ver contratos</a>
+            <a href="upload.html" class="r2-btn r2-btn--primary">+ Importar contrato</a>
           </div>
         </div>
 
-        <!-- KPIs -->
-        <div class="ct-kpi-grid">
-          <div class="kpi">
-            <div class="label">Contratos ativos</div>
-            <div class="value" id="kpi-ativos">—</div>
-            <div class="sub" id="kpi-ativos-sub">—</div>
-          </div>
-          <div class="kpi hl">
-            <div class="label">Principal contratado</div>
-            <div class="value" id="kpi-principal">—</div>
-            <div class="sub">soma de todos os contratos ativos</div>
-          </div>
-          <div class="kpi up">
-            <div class="label">Líquido liberado</div>
-            <div class="value" id="kpi-liquido">—</div>
-            <div class="sub">após IOF e tarifas</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Parcelas previstas</div>
-            <div class="value" id="kpi-parcelas">—</div>
-            <div class="sub" id="kpi-parcelas-sub">no cronograma combinado</div>
-          </div>
-        </div>
-
-        <!-- Painel: próximas parcelas -->
-        <div class="ct-panel">
-          <div class="ct-panel-head">
-            <div>
-              <h3>Próximas parcelas (30 dias)</h3>
-              <div class="sub">Vencimentos projetados a partir do cronograma extraído</div>
+        <!-- KPIs · 4 colunas -->
+        <div class="r2-grid r2-grid-4" style="margin-bottom: 14px;">
+          <div class="r2-kpi">
+            <div class="r2-kpi__head">
+              <span class="r2-kpi__label">Principal contratado</span>
+              <span class="r2-kpi__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg></span>
             </div>
-            <a href="contratos.html" class="btn btn-ghost btn-sm">Ver contratos →</a>
+            <div class="r2-kpi__row">
+              <span class="r2-kpi__value" id="kpi-principal">—</span>
+            </div>
+            <div class="r2-kpi__sub" id="kpi-principal-sub">—</div>
           </div>
-          <div class="ct-panel-body flush">
-            <table class="ct-tbl">
+
+          <div class="r2-kpi">
+            <div class="r2-kpi__head">
+              <span class="r2-kpi__label">Saldo devedor estimado</span>
+              <span class="r2-kpi__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg></span>
+            </div>
+            <div class="r2-kpi__row">
+              <span class="r2-kpi__value" id="kpi-saldo">—</span>
+            </div>
+            <div class="r2-kpi__sub" id="kpi-saldo-sub">—</div>
+          </div>
+
+          <div class="r2-kpi">
+            <div class="r2-kpi__head">
+              <span class="r2-kpi__label">Próximos 30 dias</span>
+              <span class="r2-kpi__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+            </div>
+            <div class="r2-kpi__row">
+              <span class="r2-kpi__value" id="kpi-prox30">—</span>
+            </div>
+            <div class="r2-kpi__sub" id="kpi-prox30-sub">—</div>
+          </div>
+
+          <div class="r2-kpi">
+            <div class="r2-kpi__head">
+              <span class="r2-kpi__label">Em atraso</span>
+              <span class="r2-kpi__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+            </div>
+            <div class="r2-kpi__row">
+              <span class="r2-kpi__value" id="kpi-atraso">—</span>
+            </div>
+            <div class="r2-kpi__sub" id="kpi-atraso-sub">—</div>
+          </div>
+        </div>
+
+        <!-- 2 cards de composição -->
+        <div class="ctd-charts">
+          <div class="r2-card">
+            <div class="r2-card__head">
+              <div>
+                <h3 class="r2-card__title">Exposição por indexador</h3>
+                <div class="r2-card__hint">Distribuição do principal pela taxa que corrige cada contrato</div>
+              </div>
+            </div>
+            <div class="r2-card__body">
+              <div id="bars-indexador">
+                <div class="r2-empty" style="padding: 30px 0;">Sem dados</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="r2-card">
+            <div class="r2-card__head">
+              <div>
+                <h3 class="r2-card__title">Carteira por banco</h3>
+                <div class="r2-card__hint">Principal contratado em cada instituição</div>
+              </div>
+            </div>
+            <div class="r2-card__body">
+              <div class="ctd-chart-body"><canvas id="chart-bancos"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagamentos projetados -->
+        <div class="r2-card" style="margin-bottom: 14px;">
+          <div class="r2-card__head">
+            <div>
+              <h3 class="r2-card__title">Pagamentos projetados</h3>
+              <div class="r2-card__hint">Soma das parcelas previstas nos próximos 12 meses</div>
+            </div>
+          </div>
+          <div class="r2-card__body">
+            <div class="ctd-chart-body tall"><canvas id="chart-projecao"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Pendências críticas -->
+        <div class="r2-card">
+          <div class="r2-card__head">
+            <div>
+              <h3 class="r2-card__title">Pendências críticas</h3>
+              <div class="r2-card__hint">Parcelas em atraso e vencimentos nos próximos 7 dias</div>
+            </div>
+            <a href="contratos.html" class="r2-btn r2-btn--ghost r2-btn--sm">Ver contratos →</a>
+          </div>
+          <div class="r2-card__body r2-card__body--flush">
+            <table class="ctd-pend-table" id="tbl-pendencias">
               <thead>
                 <tr>
+                  <th>Status</th>
                   <th>Vencimento</th>
-                  <th>Banco</th>
-                  <th>Contrato</th>
+                  <th>Banco · contrato</th>
                   <th class="center">Parcela</th>
                   <th class="num">Valor</th>
-                  <th class="center">Status</th>
+                  <th>Dias</th>
                 </tr>
               </thead>
-              <tbody id="proximas-tbody">
-                <tr><td colspan="6" class="center" style="padding: 32px; color: var(--muted);">Carregando…</td></tr>
+              <tbody id="tbody-pendencias">
+                <tr><td colspan="6" style="padding: 32px; text-align: center; color: var(--ink-4);">Carregando…</td></tr>
               </tbody>
             </table>
-          </div>
-        </div>
-
-        <!-- Aviso de fase -->
-        <div class="ct-panel" style="background: var(--navy-tint); border-style: dashed;">
-          <div class="ct-panel-body" style="display:flex; gap:14px; align-items:center;">
-            <span class="r2-pill r2-pill--mute"><span class="dot"></span>FASE 1</span>
-            <span style="font-size: 13px; color: var(--ink-3); flex:1;">
-              Dados desta tela vêm do mock (Sofisa CCB e Safra Middle).
-              Importação por PDF + leitura via Claude entram na Fase 5. KPIs reais de pagamento aparecem
-              ao vincular parcelas em <a href="contratos.html" style="color: var(--navy); font-weight:600;">Contratos</a>.
-            </span>
           </div>
         </div>
 
       </section>
     </div>
 
-    <footer class="r2a-footer"></footer>
+    <footer class="r2a-footer r2-footer"></footer>
   </div>
 </div>
 
-<script src="../config.js?v=0.14"></script>
-<script src="../shared.js?v=0.14"></script>
-<script src="../mock-data.js?v=0.14"></script>
-<script src="../data.js?v=0.14"></script>
-<script src="contratos.js?v=0.14"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+
+<script src="../config.js?v=0.15"></script>
+<script src="../shared.js?v=0.15"></script>
+<script src="../mock-data.js?v=0.15"></script>
+<script src="../data.js?v=0.15"></script>
+<script src="contratos.js?v=0.15"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'dashboard' });
     R2A.renderFooter();
     R2A.data.init();
 
+    const CORES = {
+      navy:    '#1A3A52',
+      navy2:   '#244B68',
+      ok:      '#16A34A',
+      warn:    '#D97706',
+      err:     '#DC2626',
+      ambig:   '#A855F7',
+      info:    '#0891B2',
+      mute:    '#94A3B8',
+      line:    '#E2E8F0'
+    };
+
+    function fmtCurto(n) {
+      if (Math.abs(n) >= 1e6) return 'R$ ' + (n / 1e6).toFixed(1).replace('.', ',') + 'M';
+      if (Math.abs(n) >= 1e3) return 'R$ ' + (n / 1e3).toFixed(1).replace('.', ',') + 'k';
+      return R2A.fmt.moeda(n, { sinal: false });
+    }
+
+    function fmtMesCurto(iso) {
+      const [y, m] = iso.split('-');
+      const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      return `${meses[+m - 1]}/${y.slice(2)}`;
+    }
+
     (async function () {
       const contratos = await R2A.contratos.list();
-      const kpis = R2A.contratos.kpis(contratos);
+      const lancamentos = await R2A.data.list(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO);
+      const k = R2A.contratos.kpisDashboard(contratos, lancamentos);
 
-      document.getElementById('kpi-ativos').textContent = kpis.ativos;
-      document.getElementById('kpi-ativos-sub').textContent = `de ${kpis.total} cadastrado(s)`;
-      document.getElementById('kpi-principal').textContent = R2A.fmt.moeda(kpis.principalTotal, { sinal: false });
-      document.getElementById('kpi-liquido').textContent = R2A.fmt.moeda(kpis.liquidoTotal, { sinal: false });
-      document.getElementById('kpi-parcelas').textContent = kpis.parcelasPrevistas;
+      // KPIs
+      document.getElementById('kpi-principal').textContent = fmtCurto(k.totalPrincipal);
+      document.getElementById('kpi-principal-sub').textContent = `${k.qtdAtivos} contrato(s) ativo(s) · líquido ${fmtCurto(k.totalLiquido)}`;
 
-      // Próximas parcelas (30 dias a partir de hoje)
-      const hoje = new Date();
-      const limite = new Date(hoje); limite.setDate(limite.getDate() + 30);
-      const tbody = document.getElementById('proximas-tbody');
-      const linhas = [];
-      contratos.forEach(c => {
-        (c.cronograma_parcelas || []).forEach(p => {
-          const dt = new Date(p.vencimento);
-          if (dt >= hoje && dt <= limite && p.valor > 0) {
-            linhas.push({ ...p, contrato: c });
+      document.getElementById('kpi-saldo').textContent = fmtCurto(k.saldoDevedor);
+      document.getElementById('kpi-saldo-sub').textContent = `pago acumulado ${fmtCurto(k.totalPago)}`;
+
+      document.getElementById('kpi-prox30').textContent = fmtCurto(k.totalProx30);
+      document.getElementById('kpi-prox30-sub').textContent = `${k.qtdProx30} parcela(s) a vencer`;
+
+      const atrasoEl = document.getElementById('kpi-atraso');
+      atrasoEl.textContent = fmtCurto(k.totalAtraso);
+      if (k.totalAtraso > 0) atrasoEl.style.color = CORES.err;
+      document.getElementById('kpi-atraso-sub').textContent = k.qtdAtraso === 0 ? 'sem parcelas em atraso' : `${k.qtdAtraso} parcela(s) atrasada(s)`;
+
+      // Barras horizontais · indexador
+      const barsHost = document.getElementById('bars-indexador');
+      if (k.porIndex.length === 0) {
+        barsHost.innerHTML = '<div class="r2-empty" style="padding: 30px 0;">Sem contratos cadastrados</div>';
+      } else {
+        const maxV = Math.max(...k.porIndex.map(x => x.valor));
+        const totalIdx = k.porIndex.reduce((s, x) => s + x.valor, 0);
+        barsHost.innerHTML = k.porIndex.map(x => {
+          const pct = totalIdx > 0 ? (x.valor / totalIdx * 100) : 0;
+          const pctMax = maxV > 0 ? (x.valor / maxV * 100) : 0;
+          return `
+            <div class="ctd-bar-row">
+              <span class="lbl">${x.indexador}</span>
+              <div class="track"><div class="fill" style="width: ${pctMax}%;"></div></div>
+              <span class="val">${fmtCurto(x.valor)}</span>
+              <span class="pct">${pct.toFixed(0)}%</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Donut · bancos
+      const ctxBancos = document.getElementById('chart-bancos').getContext('2d');
+      if (k.porBanco.length > 0) {
+        new Chart(ctxBancos, {
+          type: 'doughnut',
+          data: {
+            labels: k.porBanco.map(b => b.banco),
+            datasets: [{
+              data: k.porBanco.map(b => b.principal),
+              backgroundColor: [CORES.navy, CORES.navy2, CORES.info, CORES.ambig, CORES.warn, CORES.ok],
+              borderColor: '#fff',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: { color: CORES.navy, font: { family: 'IBM Plex Sans', size: 11.5 }, boxWidth: 10, boxHeight: 10 }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.label}: ${fmtCurto(ctx.raw)}`
+                }
+              }
+            }
           }
         });
-      });
-      linhas.sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+      }
 
-      if (linhas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="center" style="padding: 32px; color: var(--muted);">Nenhuma parcela nos próximos 30 dias</td></tr>`;
+      // Linha · pagamentos projetados próximos 12 meses
+      const ctxProj = document.getElementById('chart-projecao').getContext('2d');
+      const grad = ctxProj.createLinearGradient(0, 0, 0, 280);
+      grad.addColorStop(0, 'rgba(26, 58, 82, 0.18)');
+      grad.addColorStop(1, 'rgba(26, 58, 82, 0.00)');
+      new Chart(ctxProj, {
+        type: 'line',
+        data: {
+          labels: k.mesesProj.map(m => fmtMesCurto(m.mes)),
+          datasets: [{
+            label: 'Pagamentos projetados',
+            data: k.mesesProj.map(m => m.valor),
+            borderColor: CORES.navy,
+            backgroundColor: grad,
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.32,
+            pointBackgroundColor: CORES.navy,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${R2A.fmt.moeda(ctx.raw, { sinal: false })}`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: CORES.mute, font: { family: 'IBM Plex Mono', size: 10.5 } } },
+            y: { grid: { color: CORES.line }, ticks: { color: CORES.mute, font: { family: 'IBM Plex Mono', size: 10.5 }, callback: (v) => fmtCurto(v) }, beginAtZero: true }
+          }
+        }
+      });
+
+      // Tabela de pendências
+      const tbody = document.getElementById('tbody-pendencias');
+      if (k.pendencias.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding: 32px; text-align: center; color: var(--ink-4);">Nenhuma pendência crítica · todas as parcelas estão em dia</td></tr>`;
       } else {
-        tbody.innerHTML = linhas.slice(0, 20).map(l => `
-          <tr>
-            <td>${R2A.fmt.data(l.vencimento)}</td>
-            <td><span class="banco-code">${l.contrato.banco_codigo_bacen || '—'}</span> ${l.contrato.banco}</td>
-            <td><a href="contrato.html?id=${l.contrato.id}" style="color: var(--accent-text); font-weight: 600;">${l.contrato.numero_contrato}</a></td>
-            <td class="center">${l.n}/${l.contrato.estrutura.qtd_parcelas}</td>
-            <td class="num">${R2A.fmt.moeda(l.valor, { sinal: false })}</td>
-            <td class="center"><span class="pill pendente">aberta</span></td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = k.pendencias.map(item => {
+          const p = item.parcela, c = item.contrato;
+          const statusBadge = item.tipo === 'atraso'
+            ? '<span class="r2-status" data-kind="atraso">em atraso</span>'
+            : '<span class="r2-status" data-kind="pendente">a vencer</span>';
+          const diasTxt = item.tipo === 'atraso'
+            ? `+${item.diasAtraso}d`
+            : `em ${item.diasParaVencer}d`;
+          return `
+            <tr class="${item.tipo}" onclick="window.location.href='contrato.html?id=${c.id}'">
+              <td>${statusBadge}</td>
+              <td><span class="date" style="font-family: var(--font-mono); color: var(--ink-4); font-size: 11.5px;">${R2A.fmt.data(p.vencimento)}</span></td>
+              <td><strong>${c.banco}</strong><div style="font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-4); margin-top: 2px;">${c.numero_contrato}</div></td>
+              <td class="center">${p.n}/${c.estrutura.qtd_parcelas}</td>
+              <td class="num">${R2A.fmt.moeda(p.valor, { sinal: false })}</td>
+              <td class="dias">${diasTxt}</td>
+            </tr>
+          `;
+        }).join('');
       }
     })();
   }

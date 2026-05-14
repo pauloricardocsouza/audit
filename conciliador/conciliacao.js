@@ -20,16 +20,17 @@
     modalCtx: null
   };
 
-  // Em DEV usamos os arrays do mock. Em produção, vamos popular via Firestore.
-  function carregarDados() {
-    if (CFG.MODO_DEV) {
-      State.banco = M.BANCO;
-      State.sia = M.SIA;
-      // popular select de contas
-      const sel = document.getElementById('filter-conta');
-      sel.innerHTML = `<option value="all">Todas (${M.CONTAS.length})</option>` +
-        M.CONTAS.map(c => `<option value="${c.id}">${c.apelido}</option>`).join('');
-    }
+  // Carrega via R2A.data (DEV: localStorage seedado; PROD: Firestore)
+  // Mantém vínculos feitos no módulo Análise de Contratos refletidos aqui.
+  async function carregarDados() {
+    R2A.data.init();
+    const C = CFG.COLLECTIONS;
+    State.banco = await R2A.data.list(C.LANCAMENTOS_BANCO);
+    State.sia   = await R2A.data.list(C.LANCAMENTOS_SIA);
+    const contas = await R2A.data.list(C.CONTAS);
+    const sel = document.getElementById('filter-conta');
+    sel.innerHTML = `<option value="all">Todas (${contas.length})</option>` +
+      contas.map(c => `<option value="${c.id}">${c.apelido}</option>`).join('');
   }
 
   // -------- HELPERS LOCAIS --------
@@ -367,35 +368,57 @@
     renderAll();
   }
 
+  // Helper: persiste mudança de status em R2A.data (DEV: localStorage; PROD: Firestore)
+  async function persistirStatus(side, id, status) {
+    const col = side === 'banco' ? CFG.COLLECTIONS.LANCAMENTOS_BANCO : CFG.COLLECTIONS.LANCAMENTOS_SIA;
+    try { await R2A.data.update(col, id, { status }); } catch (e) { console.warn('persistirStatus falhou', e); }
+  }
+
   // -------- AÇÕES DE STATUS --------
-  function applyStatus(status) {
+  async function applyStatus(status) {
     let n = 0;
-    State.sel.banco.forEach(id => { const it = State.banco.find(x => x.id === id); if (it) { it.status = status; n++; } });
-    State.sel.sia.forEach(id => { const it = State.sia.find(x => x.id === id); if (it) { it.status = status; n++; } });
+    const pend = [];
+    State.sel.banco.forEach(id => {
+      const it = State.banco.find(x => x.id === id);
+      if (it) { it.status = status; n++; pend.push(persistirStatus('banco', id, status)); }
+    });
+    State.sel.sia.forEach(id => {
+      const it = State.sia.find(x => x.id === id);
+      if (it) { it.status = status; n++; pend.push(persistirStatus('sia', id, status)); }
+    });
     State.sel.banco.clear(); State.sel.sia.clear();
+    await Promise.all(pend);
     R2A.auditar('aplicar_status', { status, qtd: n });
     R2A.toast(`${n} lançamento(s) marcado(s) como ${status}`, 'success');
     renderAll();
   }
 
   // -------- REVERSÃO --------
-  function reverseSelection() {
+  async function reverseSelection() {
     const ids = [...State.sel.banco, ...State.sel.sia];
     if (ids.length === 0) { R2A.toast('Nenhuma seleção', 'warning'); return; }
     const before = State.matches.length;
     State.matches = State.matches.filter(m =>
       !ids.includes(m.banco_id) && !m.sia_ids.some(s => ids.includes(s))
     );
+    const pend = [];
     [...State.sel.banco].forEach(id => {
       const it = State.banco.find(x => x.id === id);
-      if (it && ['ignorado', 'justificado', 'analise'].includes(it.status)) it.status = 'pendente';
+      if (it && ['ignorado', 'justificado', 'analise'].includes(it.status)) {
+        it.status = 'pendente';
+        pend.push(persistirStatus('banco', id, 'pendente'));
+      }
     });
     [...State.sel.sia].forEach(id => {
       const it = State.sia.find(x => x.id === id);
-      if (it && ['ignorado', 'justificado', 'analise'].includes(it.status)) it.status = 'pendente';
+      if (it && ['ignorado', 'justificado', 'analise'].includes(it.status)) {
+        it.status = 'pendente';
+        pend.push(persistirStatus('sia', id, 'pendente'));
+      }
     });
     State.sel.banco.clear(); State.sel.sia.clear();
     const n = before - State.matches.length;
+    await Promise.all(pend);
     R2A.auditar('reverter_selecao', { qtd_matches: n, ids });
     R2A.toast(`${n} conciliação(ões) revertida(s)`, 'success');
     renderAll();
@@ -406,14 +429,22 @@
     if (!ok) return;
     const n = State.matches.length;
     State.matches = [];
+    const pend = [];
     State.banco.forEach(x => {
-      if (['ignorado', 'justificado', 'analise'].includes(x.status)) x.status = 'pendente';
+      if (['ignorado', 'justificado', 'analise'].includes(x.status)) {
+        x.status = 'pendente';
+        pend.push(persistirStatus('banco', x.id, 'pendente'));
+      }
       delete x._ambiguo;
     });
     State.sia.forEach(x => {
-      if (['ignorado', 'justificado', 'analise'].includes(x.status)) x.status = 'pendente';
+      if (['ignorado', 'justificado', 'analise'].includes(x.status)) {
+        x.status = 'pendente';
+        pend.push(persistirStatus('sia', x.id, 'pendente'));
+      }
       delete x._ambiguo;
     });
+    await Promise.all(pend);
     R2A.auditar('reverter_tudo', { qtd_matches: n });
     R2A.toast(`${n} conciliação(ões) e status manuais revertidos`, 'success');
     renderAll();
@@ -481,11 +512,11 @@
   }
 
   // -------- INIT --------
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     if (!R2A.requireAuth()) return;
     R2A.renderShell({ modulo: 'conciliador', item: 'conciliacao' });
     R2A.renderFooter();
-    carregarDados();
+    await carregarDados();
     wire();
     renderAll();
   });
