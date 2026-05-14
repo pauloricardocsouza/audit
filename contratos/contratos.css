@@ -1,0 +1,346 @@
+/* ============================================================
+   Módulo Análise de Contratos · estilos próprios
+   Usa tokens globais do shared.css (Archivo + JetBrains Mono,
+   navy #2E476F + laranja #F58634)
+   ============================================================ */
+
+/* Área de conteúdo do módulo */
+.ct-wrap {
+  padding: 22px 24px 32px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ct-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.ct-page-title h1 {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin-bottom: 2px;
+}
+
+.ct-page-title p {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.ct-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ===== KPI grid ===== */
+.ct-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 900px) {
+  .ct-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ===== Cards do módulo ===== */
+.ct-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.ct-panel-head {
+  padding: 14px 18px;
+  background: var(--accent-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ct-panel-head h3 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ct-panel-head .sub {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ct-panel-body { padding: 16px 18px; }
+.ct-panel-body.flush { padding: 0; }
+
+/* ===== Lista de contratos ===== */
+.ct-list-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ct-list-toolbar .search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.ct-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ct-tbl thead th {
+  background: var(--surface-2);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+}
+
+.ct-tbl thead th.num    { text-align: right; }
+.ct-tbl thead th.center { text-align: center; }
+
+.ct-tbl tbody tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.ct-tbl tbody tr:hover { background: var(--surface-2); }
+
+.ct-tbl tbody td {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.ct-tbl td.num    { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ct-tbl td.center { text-align: center; }
+
+.ct-tbl .banco {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ct-tbl .banco-code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.ct-tbl .contrato-num {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+/* progresso linear */
+.ct-progress {
+  height: 6px;
+  background: var(--surface-3);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.ct-progress .bar {
+  height: 100%;
+  background: var(--success);
+  transition: width 0.3s;
+}
+.ct-progress .bar.warning { background: var(--warning); }
+.ct-progress .bar.danger  { background: var(--danger); }
+.ct-progress .bar.flutuante { background: linear-gradient(90deg, var(--gray-grad-mid), var(--gray-grad-light)); }
+
+/* ===== Detalhe do contrato ===== */
+.ct-detail-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 1100px) {
+  .ct-detail-grid { grid-template-columns: 1fr; }
+}
+
+.ct-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 18px;
+}
+
+@media (max-width: 720px) {
+  .ct-info-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.ct-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ct-info-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+}
+
+.ct-info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ct-info-value.lg {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.ct-info-sub {
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+/* badges de garantia */
+.ct-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ===== Cronograma de parcelas ===== */
+.ct-cronograma {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.ct-cronograma table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ct-cronograma thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.ct-cronograma thead th.num    { text-align: right; }
+.ct-cronograma thead th.center { text-align: center; }
+
+.ct-cronograma tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ct-cronograma tbody td.num    { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ct-cronograma tbody td.center { text-align: center; }
+
+.ct-cronograma tbody tr.carencia { background: var(--surface-2); }
+.ct-cronograma tbody tr.carencia td { color: var(--muted); font-style: italic; }
+.ct-cronograma tbody tr.paga td .ct-parcela-status { color: var(--success-text); }
+.ct-cronograma tbody tr.atraso td .ct-parcela-status { color: var(--warning); }
+.ct-cronograma tbody tr.aberta td .ct-parcela-status { color: var(--text-muted); }
+
+.ct-parcela-status {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ===== Upload area ===== */
+.ct-dropzone {
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 40px 24px;
+  text-align: center;
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 18px;
+}
+
+.ct-dropzone:hover,
+.ct-dropzone.drag {
+  border-color: var(--highlight);
+  background: var(--highlight-bg);
+}
+
+.ct-dropzone-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+  color: var(--accent-text);
+}
+
+.ct-dropzone h3 {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.ct-dropzone p {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: 12px;
+}
+
+.ct-dropzone .hint {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ===== Simulador ===== */
+.ct-sim-form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 18px;
+}
+@media (max-width: 720px) { .ct-sim-form { grid-template-columns: 1fr; } }
+
+.ct-sim-form .field { display: flex; flex-direction: column; gap: 4px; }
+.ct-sim-form input,
+.ct-sim-form select { width: 100%; }

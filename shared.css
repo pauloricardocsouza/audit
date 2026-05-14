@@ -59,6 +59,14 @@
   --violet-text: #6d28d9;
   --violet-bg: rgba(124,58,237,0.10);
 
+  /* Gradientes decorativos · escala de cinza (padrão do sistema) */
+  --gray-grad-dark:   #2a2f3a;
+  --gray-grad-mid:    #4a5262;
+  --gray-grad-light:  #c9d0da;
+  --gray-grad-fade:   #e4e8ee;
+  --gray-glow:        rgba(74, 82, 98, 0.10);
+  --gray-glow-strong: rgba(74, 82, 98, 0.18);
+
   /* Sombras */
   --shadow-sm: 0 1px 3px rgba(10,14,22,0.04);
   --shadow: 0 2px 8px rgba(10,14,22,0.06);
@@ -140,7 +148,7 @@ h3 { font-size: 15px; }
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top right, var(--highlight-glow), transparent 70%);
+  background: radial-gradient(circle at top right, var(--gray-glow-strong), transparent 70%);
   pointer-events: none;
 }
 
@@ -173,14 +181,14 @@ h3 { font-size: 15px; }
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary), var(--highlight));
+  background: linear-gradient(135deg, var(--gray-grad-dark), var(--gray-grad-light));
   align-items: center;
   justify-content: center;
   color: #fff;
   font-weight: 800;
   font-size: 13px;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(46,71,111,0.25);
+  box-shadow: 0 2px 6px rgba(10,14,22,0.18);
 }
 
 .r2a-sb-name {
@@ -379,7 +387,7 @@ h3 { font-size: 15px; }
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--highlight));
+  background: linear-gradient(135deg, var(--gray-grad-dark), var(--gray-grad-light));
   color: #fff;
   display: flex;
   align-items: center;
@@ -694,12 +702,14 @@ label {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top right, var(--accent-glow), transparent 70%);
+  background: radial-gradient(circle at top right, var(--gray-glow), transparent 70%);
   pointer-events: none;
 }
+/* Variantes semânticas mantêm cor (sinalizam estado) */
 .kpi.up::after { background: radial-gradient(circle at top right, rgba(16,152,84,0.14), transparent 70%); }
 .kpi.dn::after { background: radial-gradient(circle at top right, rgba(217,45,32,0.12), transparent 70%); }
-.kpi.hl::after { background: radial-gradient(circle at top right, var(--highlight-glow), transparent 70%); }
+/* Variante decorativa de destaque · cinza mais forte (sem cor) */
+.kpi.hl::after { background: radial-gradient(circle at top right, var(--gray-glow-strong), transparent 70%); }
 
 .kpi .label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;

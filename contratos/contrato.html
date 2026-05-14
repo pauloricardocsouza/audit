@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contrato · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.11">
+<link rel="stylesheet" href="contratos.css?v=0.11">
+</head>
+<body>
+
+<div class="r2a-shell">
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+      <section class="ct-wrap" id="cnt-wrap">
+        <div style="text-align:center; padding: 60px; color: var(--muted);">Carregando contrato…</div>
+      </section>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+</div>
+
+<script src="../config.js?v=0.11"></script>
+<script src="../shared.js?v=0.11"></script>
+<script src="../mock-data.js?v=0.11"></script>
+<script src="../data.js?v=0.11"></script>
+<script src="contratos.js?v=0.11"></script>
+<script>
+  if (R2A.requireAuth()) {
+    R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
+    R2A.renderFooter();
+    R2A.data.init();
+
+    (async function () {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      if (!id) { window.location.href = 'contratos.html'; return; }
+
+      const c = await R2A.contratos.get(id);
+      const wrap = document.getElementById('cnt-wrap');
+      if (!c) {
+        wrap.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div><p>Contrato não encontrado</p><a href="contratos.html" class="btn">Voltar à lista</a></div>`;
+        return;
+      }
+
+      const banco = `${c.banco}${c.banco_codigo_bacen ? ` · ${c.banco_codigo_bacen}` : ''}`;
+      const taxa = R2A.contratos.fmtTaxa(c.taxa_juros);
+      const sistema = R2A.contratos.fmtSistema(c.estrutura.sistema_amortizacao_detectado);
+      const cet = c.taxa_juros.cet_aa ? (c.taxa_juros.cet_aa * 100).toFixed(4) + '% a.a.' : '—';
+
+      // simulação de match (vai usar lancamentos reais na Fase 4)
+      const lancamentos = (window.R2A_MOCK && window.R2A_MOCK.BANCO) || [];
+      const parcelas = R2A.contratos.matchParcelas(c, lancamentos);
+      const pagas = parcelas.filter(p => p.status === 'pago' || p.status === 'pago_maior' || p.status === 'pago_menor').length;
+      const totalAmort = parcelas.filter(p => p.tipo !== 'carencia' && p.valor > 0).length;
+      const valorPrev = parcelas.reduce((s, p) => s + (p.valor || 0), 0);
+      const valorPago = parcelas.reduce((s, p) => s + (p.pago ? p.pago.valor : 0), 0);
+      const pctCumprimento = totalAmort > 0 ? Math.round((pagas / totalAmort) * 100) : 0;
+
+      const garantiasHtml = (c.garantias || []).map(g => {
+        const tagClass = g.tipo === 'aval' ? 'tag mut' : g.tipo === 'cessao_fiduciaria' ? 'tag hl' : g.tipo === 'fundo_garantidor' ? 'tag grn' : 'tag acc';
+        return `<span class="${tagClass}">${g.tipo.replace(/_/g, ' ')}${g.percentual ? ` ${g.percentual}%` : ''}</span>`;
+      }).join('');
+
+      const cenariosTaxa = (c.taxa_juros.cenarios_alternativos || []).map(cn => `
+        <div class="ct-info-sub">
+          ${cn.descricao}: ${cn.am ? (cn.am * 100).toFixed(4) + '% a.m.' : ''}
+          ${cn.aa ? ` · ${(cn.aa * 100).toFixed(4)}% a.a.` : ''}
+        </div>
+      `).join('');
+
+      const flagsQ = c.qualidade_extracao || {};
+      const flagsHtml = [
+        flagsQ.pdf_escaneado ? '<span class="tag dnd">PDF escaneado</span>' : null,
+        flagsQ.checkbox_amortizacao_marcado === false ? '<span class="tag hl">amort. não marcada</span>' : null,
+        !flagsQ.cet_informado ? '<span class="tag mut">CET não informado</span>' : null,
+        flagsQ.campos_faltantes && flagsQ.campos_faltantes.length ? `<span class="tag mut">${flagsQ.campos_faltantes.length} campo(s) faltante(s)</span>` : null
+      ].filter(Boolean).join(' ');
+
+      wrap.innerHTML = `
+        <div class="ct-page-head">
+          <div class="ct-page-title">
+            <h1>${banco}</h1>
+            <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.04em;">
+              Contrato ${c.numero_contrato} · ${R2A.contratos.fmtProduto(c.produto)}
+            </p>
+          </div>
+          <div class="ct-page-actions">
+            <a href="contratos.html" class="btn btn-ghost">← Voltar</a>
+            ${(function () {
+              const p = c.pdf_original;
+              if (!p) {
+                return '<button class="btn" disabled title="Nenhum PDF anexado">⤓ Sem PDF</button>';
+              }
+              const tamanho = p.tamanho_kb ? ` · ${(p.tamanho_kb / 1024).toFixed(1)} MB` : '';
+              if (p.url) {
+                return `<a href="${p.url}" download="${p.nome}" class="btn btn-primary" title="${p.nome}${tamanho}">⤓ Baixar PDF</a>`;
+              }
+              return `<button class="btn" disabled title="Arquivo: ${p.nome}${tamanho} · ainda não anexado (mock)">⤓ ${p.nome}</button>`;
+            })()}
+            <button class="btn" disabled title="Disponível na Fase 5">Reimportar PDF</button>
+          </div>
+        </div>
+
+        <!-- KPIs do contrato -->
+        <div class="ct-kpi-grid">
+          <div class="kpi">
+            <div class="label">Principal</div>
+            <div class="value">${R2A.fmt.moeda(c.valores.principal, { sinal: false })}</div>
+            <div class="sub">contratado</div>
+          </div>
+          <div class="kpi up">
+            <div class="label">Líquido liberado</div>
+            <div class="value">${c.valores.liquido_liberado ? R2A.fmt.moeda(c.valores.liquido_liberado, { sinal: false }) : '—'}</div>
+            <div class="sub">${c.valores.iof ? 'IOF ' + R2A.fmt.moeda(c.valores.iof, { sinal: false }) : ''} ${c.valores.tarifas ? ' · Tarifas ' + R2A.fmt.moeda(c.valores.tarifas, { sinal: false }) : ''}</div>
+          </div>
+          <div class="kpi hl">
+            <div class="label">Cumprimento (mock)</div>
+            <div class="value">${pctCumprimento}<span class="unit">%</span></div>
+            <div class="sub">${pagas} de ${totalAmort} parcelas vinculadas</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Pago vs previsto</div>
+            <div class="value">${R2A.fmt.moeda(valorPago, { sinal: false })}</div>
+            <div class="sub">de ${R2A.fmt.moeda(valorPrev, { sinal: false })} previsto</div>
+          </div>
+        </div>
+
+        <div class="ct-detail-grid">
+          <!-- Esquerda: cronograma -->
+          <div>
+            <div class="ct-panel">
+              <div class="ct-panel-head">
+                <div>
+                  <h3>Cronograma de parcelas</h3>
+                  <div class="sub">${c.qualidade_extracao && c.qualidade_extracao.cronograma_extraido ? 'extraído do anexo de parcelas' : 'simulado'} · ${c.cronograma_parcelas.length} parcelas</div>
+                </div>
+                <div>${flagsHtml}</div>
+              </div>
+              <div class="ct-panel-body flush">
+                <div class="ct-cronograma">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="center">#</th>
+                        <th>Vencimento</th>
+                        <th class="num">Esperado</th>
+                        <th class="num">Pago</th>
+                        <th class="num">Diferença</th>
+                        <th class="center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${parcelas.map(p => {
+                        const rowClass = p.status === 'carencia' ? 'carencia' : p.pago ? 'paga' : p.status === 'atraso' ? 'atraso' : 'aberta';
+                        const statusLabel = {
+                          'pago': 'pago',
+                          'pago_menor': 'pago a menor',
+                          'pago_maior': 'pago a maior',
+                          'atraso': 'em atraso',
+                          'aberta': 'aberta',
+                          'carencia': 'carência'
+                        }[p.status] || p.status;
+                        return `
+                          <tr class="${rowClass}">
+                            <td class="center">${p.n}</td>
+                            <td>${R2A.fmt.data(p.vencimento)}</td>
+                            <td class="num">${p.valor > 0 ? R2A.fmt.moeda(p.valor, { sinal: false }) : '—'}</td>
+                            <td class="num">${p.pago ? R2A.fmt.moeda(p.pago.valor, { sinal: false }) : '—'}</td>
+                            <td class="num">${p.pago && p.pago.diferenca ? (p.pago.diferenca > 0 ? '+' : '') + R2A.fmt.moeda(p.pago.diferenca, { sinal: false }) : '—'}</td>
+                            <td class="center"><span class="ct-parcela-status">${statusLabel}</span></td>
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Direita: dados do contrato -->
+          <div>
+            <div class="ct-panel">
+              <div class="ct-panel-head"><div><h3>Tomador e garantias</h3></div></div>
+              <div class="ct-panel-body">
+                <div class="ct-info-grid">
+                  <div class="ct-info" style="grid-column: span 3;">
+                    <span class="ct-info-label">Razão social</span>
+                    <span class="ct-info-value">${c.tomador.razao_social}</span>
+                    <span class="ct-info-sub">${c.tomador.cnpj}</span>
+                  </div>
+                  ${(c.avalistas || []).map(a => `
+                    <div class="ct-info" style="grid-column: span 3;">
+                      <span class="ct-info-label">Avalista</span>
+                      <span class="ct-info-value">${a.nome}</span>
+                      <span class="ct-info-sub">${a.cpf_cnpj}</span>
+                    </div>
+                  `).join('')}
+                </div>
+                <div style="margin-top: 14px;">
+                  <span class="ct-info-label" style="display: block; margin-bottom: 6px;">Garantias</span>
+                  <div class="ct-tag-row">${garantiasHtml || '<span class="muted">nenhuma</span>'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ct-panel">
+              <div class="ct-panel-head"><div><h3>Condições financeiras</h3></div></div>
+              <div class="ct-panel-body">
+                <div class="ct-info-grid" style="grid-template-columns: repeat(2, 1fr);">
+                  <div class="ct-info">
+                    <span class="ct-info-label">Taxa</span>
+                    <span class="ct-info-value">${taxa}</span>
+                    ${cenariosTaxa}
+                  </div>
+                  <div class="ct-info">
+                    <span class="ct-info-label">CET</span>
+                    <span class="ct-info-value">${cet}</span>
+                  </div>
+                  <div class="ct-info">
+                    <span class="ct-info-label">Sistema</span>
+                    <span class="ct-info-value">${sistema}</span>
+                    ${c.estrutura.sistema_amortizacao_declarado !== c.estrutura.sistema_amortizacao_detectado
+                      ? `<span class="ct-info-sub">declarado: ${R2A.contratos.fmtSistema(c.estrutura.sistema_amortizacao_declarado)}</span>` : ''}
+                  </div>
+                  <div class="ct-info">
+                    <span class="ct-info-label">Carência</span>
+                    <span class="ct-info-value">${c.estrutura.carencia.meses} ${c.estrutura.carencia.meses === 1 ? 'mês' : 'meses'}</span>
+                    ${c.estrutura.carencia.fonte !== 'nenhuma' ? `<span class="ct-info-sub">fonte: ${c.estrutura.carencia.fonte.replace(/_/g, ' ')}</span>` : ''}
+                  </div>
+                  <div class="ct-info">
+                    <span class="ct-info-label">Emissão</span>
+                    <span class="ct-info-value">${R2A.fmt.data(c.datas.emissao)}</span>
+                  </div>
+                  <div class="ct-info">
+                    <span class="ct-info-label">Última parcela</span>
+                    <span class="ct-info-value">${R2A.fmt.data(c.datas.ultima_parcela)}</span>
+                  </div>
+                  <div class="ct-info" style="grid-column: span 2;">
+                    <span class="ct-info-label">Conta de débito</span>
+                    <span class="ct-info-value">
+                      ${c.conta_debito.banco || ''} · ag. ${c.conta_debito.agencia || '—'} · c/c ${c.conta_debito.numero || '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            ${(c.instrumentos_relacionados || []).length > 0 ? `
+              <div class="ct-panel">
+                <div class="ct-panel-head"><div><h3>Instrumentos relacionados</h3></div></div>
+                <div class="ct-panel-body">
+                  ${c.instrumentos_relacionados.map(i => `
+                    <div class="ct-info" style="margin-bottom: 8px;">
+                      <span class="ct-info-label">${i.tipo.replace(/_/g, ' ')}</span>
+                      <span class="ct-info-value" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">${i.numero}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+      `;
+    })();
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+# Config local do Claude Code (servidor de preview, etc)
+.claude/
+
+# Logs e temporários
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backups locais
+*.bak
+*.orig
+
+# Node (caso futuramente alguém adicione build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

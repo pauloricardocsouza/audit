@@ -115,7 +115,7 @@
 .r2a-rel-preview-header {
   padding: 18px 24px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  background: linear-gradient(135deg, var(--gray-grad-dark) 0%, var(--gray-grad-mid) 100%);
   color: white;
   display: flex;
   align-items: center;

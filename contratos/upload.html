@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Importar contrato · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.11">
+<link rel="stylesheet" href="contratos.css?v=0.11">
+</head>
+<body>
+
+<div class="r2a-shell">
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+      <section class="ct-wrap">
+
+        <div class="ct-page-head">
+          <div class="ct-page-title">
+            <h1>Importar contrato</h1>
+            <p>Envie o PDF do contrato. O sistema extrai o texto, identifica os campos e simula o cronograma.</p>
+          </div>
+        </div>
+
+        <!-- Dropzone (Fase 1: visual; Fase 2: funcional com PDF.js) -->
+        <div class="ct-dropzone" id="dropzone">
+          <div class="ct-dropzone-icon">⇪</div>
+          <h3>Solte o PDF aqui</h3>
+          <p>ou clique para escolher um arquivo</p>
+          <span class="hint">PDF até 25 MB · 1 contrato por vez</span>
+        </div>
+
+        <!-- Pipeline preview -->
+        <div class="ct-panel">
+          <div class="ct-panel-head">
+            <div>
+              <h3>Pipeline de leitura</h3>
+              <div class="sub">As fases abaixo serão implementadas nas próximas iterações</div>
+            </div>
+          </div>
+          <div class="ct-panel-body">
+            <ol style="padding-left: 18px; line-height: 1.9; font-size: 13px; color: var(--text-2);">
+              <li><strong>Extração local</strong> (Fase 2) · PDF.js no navegador lê o texto. PDF nunca sai do cliente nesta etapa.</li>
+              <li><strong>Detecção de escaneamento</strong> (Fase 2) · se o texto sair vazio, aciona OCR via Claude Vision.</li>
+              <li><strong>Estruturação</strong> (Fase 5) · Claude (Anthropic) recebe o texto + schema e devolve JSON com banco, valor, prazo, taxa, sistema de amortização, cronograma, garantias.</li>
+              <li><strong>Revisão humana</strong> (Fase 2) · usuário valida o JSON extraído em formulário antes de salvar.</li>
+              <li><strong>Persistência</strong> (Fase 2) · Firestore <code>contratos</code> + cronograma inline.</li>
+              <li><strong>Match com extratos</strong> (Fase 4) · cruza cronograma com <code>lancamentos_banco</code> (tolerância ±5 dias, ±5% no valor).</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Aviso Fase 1 -->
+        <div class="ct-panel" style="border-color: var(--highlight); background: var(--highlight-bg);">
+          <div class="ct-panel-body">
+            <strong style="color: var(--highlight-text);">⚠ Fase 1 · esqueleto não-funcional</strong><br>
+            <span style="font-size: 13px; color: var(--text-2);">
+              O upload ainda não processa o PDF. Por enquanto, os contratos disponíveis vêm do mock.
+              A funcionalidade real entra na Fase 2 (PDF.js + formulário manual) e na Fase 5 (Claude extrai os campos).
+            </span>
+            <div style="margin-top: 12px;">
+              <a href="contratos.html" class="btn">Ver contratos no mock</a>
+              <a href="simulador.html" class="btn btn-ghost">Abrir simulador</a>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+</div>
+
+<script src="../config.js?v=0.11"></script>
+<script src="../shared.js?v=0.11"></script>
+<script src="../mock-data.js?v=0.11"></script>
+<script src="../data.js?v=0.11"></script>
+<script src="contratos.js?v=0.11"></script>
+<script>
+  if (R2A.requireAuth()) {
+    R2A.renderShell({ modulo: 'contratos', item: 'upload' });
+    R2A.renderFooter();
+    R2A.data.init();
+
+    // Dropzone visual (sem processamento ainda)
+    const dz = document.getElementById('dropzone');
+    ['dragenter','dragover'].forEach(ev => {
+      dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); });
+    });
+    ['dragleave','drop'].forEach(ev => {
+      dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); });
+    });
+    dz.addEventListener('drop', e => {
+      R2A.toast('Upload entra na Fase 2 (PDF.js). Por enquanto use o mock.', 'info', 4000);
+    });
+    dz.addEventListener('click', () => {
+      R2A.toast('Upload entra na Fase 2 (PDF.js). Por enquanto use o mock.', 'info', 4000);
+    });
+  }
+</script>
+
+</body>
+</html>

@@ -3,7 +3,7 @@
 // ============================================================
 window.R2A_CONFIG = {
   APP_NAME: 'R2 Audit',
-  APP_VERSION: '0.9',
+  APP_VERSION: '0.11',
   COMPANY: 'R2 SOLUÇÕES EMPRESARIAIS',
   DOMAIN: 'audit.solucoesr2.com.br',
 
@@ -27,7 +27,8 @@ window.R2A_CONFIG = {
     MATCHES:           'conciliacoes',
     PERIODOS:          'periodos',
     UPLOADS:           'uploads_log',
-    AUDITORIA:         'auditoria'
+    AUDITORIA:         'auditoria',
+    CONTRATOS:         'contratos'
   },
 
   // Regras de negócio do Conciliador
@@ -67,6 +68,20 @@ window.R2A_CONFIG = {
         { id: 'conciliacao',   label: 'Conciliação',   href: 'conciliador/conciliacao.html',   icon: '⇄' },
         { id: 'relatorios',    label: 'Relatórios',    href: 'conciliador/relatorios.html',    icon: '≡' },
         { id: 'cadastros',     label: 'Cadastros',     href: 'conciliador/cadastros.html',     icon: '☰' }
+      ]
+    },
+    {
+      id: 'contratos',
+      label: 'Análise de Contratos',
+      icon: '⊟',
+      base: 'contratos/',
+      desc: 'Leitura de contratos · simulação de parcelas · auditoria contra extrato',
+      ativo: true,
+      itens: [
+        { id: 'dashboard', label: 'Dashboard',         href: 'contratos/dashboard.html', icon: '◐' },
+        { id: 'upload',    label: 'Importar contrato', href: 'contratos/upload.html',    icon: '⇪' },
+        { id: 'contratos', label: 'Contratos',         href: 'contratos/contratos.html', icon: '⊟' },
+        { id: 'simulador', label: 'Simulador',         href: 'contratos/simulador.html', icon: '∑' }
       ]
     }
     // Próximos módulos virão aqui

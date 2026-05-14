@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análise de Contratos · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.11">
+<link rel="stylesheet" href="contratos.css?v=0.11">
+</head>
+<body>
+
+<div class="r2a-shell">
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+      <section class="ct-wrap">
+
+        <div class="ct-page-head">
+          <div class="ct-page-title">
+            <h1>Análise de Contratos</h1>
+            <p>Visão consolidada da carteira de empréstimos e dívida estruturada.</p>
+          </div>
+          <div class="ct-page-actions">
+            <a href="upload.html" class="btn btn-primary">+ Importar contrato</a>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="ct-kpi-grid">
+          <div class="kpi">
+            <div class="label">Contratos ativos</div>
+            <div class="value" id="kpi-ativos">—</div>
+            <div class="sub" id="kpi-ativos-sub">—</div>
+          </div>
+          <div class="kpi hl">
+            <div class="label">Principal contratado</div>
+            <div class="value" id="kpi-principal">—</div>
+            <div class="sub">soma de todos os contratos ativos</div>
+          </div>
+          <div class="kpi up">
+            <div class="label">Líquido liberado</div>
+            <div class="value" id="kpi-liquido">—</div>
+            <div class="sub">após IOF e tarifas</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Parcelas previstas</div>
+            <div class="value" id="kpi-parcelas">—</div>
+            <div class="sub" id="kpi-parcelas-sub">no cronograma combinado</div>
+          </div>
+        </div>
+
+        <!-- Painel: próximas parcelas -->
+        <div class="ct-panel">
+          <div class="ct-panel-head">
+            <div>
+              <h3>Próximas parcelas (30 dias)</h3>
+              <div class="sub">Vencimentos projetados a partir do cronograma extraído</div>
+            </div>
+            <a href="contratos.html" class="btn btn-ghost btn-sm">Ver contratos →</a>
+          </div>
+          <div class="ct-panel-body flush">
+            <table class="ct-tbl">
+              <thead>
+                <tr>
+                  <th>Vencimento</th>
+                  <th>Banco</th>
+                  <th>Contrato</th>
+                  <th class="center">Parcela</th>
+                  <th class="num">Valor</th>
+                  <th class="center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="proximas-tbody">
+                <tr><td colspan="6" class="center" style="padding: 32px; color: var(--muted);">Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Aviso de fase -->
+        <div class="ct-panel" style="border-color: var(--highlight); background: var(--highlight-bg);">
+          <div class="ct-panel-body">
+            <strong style="color: var(--highlight-text);">⚠ Fase 1 · esqueleto navegável</strong><br>
+            <span style="font-size: 13px; color: var(--text-2);">
+              Os dados nesta tela vêm do mock (2 contratos reais anonimizados: Sofisa CCB e Safra Middle).
+              Importação real de PDF + leitura via Claude entram na Fase 5.
+              KPIs de pagamento entram na Fase 4, quando o match contra os lançamentos bancários estiver pronto.
+            </span>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+</div>
+
+<script src="../config.js?v=0.11"></script>
+<script src="../shared.js?v=0.11"></script>
+<script src="../mock-data.js?v=0.11"></script>
+<script src="../data.js?v=0.11"></script>
+<script src="contratos.js?v=0.11"></script>
+<script>
+  if (R2A.requireAuth()) {
+    R2A.renderShell({ modulo: 'contratos', item: 'dashboard' });
+    R2A.renderFooter();
+    R2A.data.init();
+
+    (async function () {
+      const contratos = await R2A.contratos.list();
+      const kpis = R2A.contratos.kpis(contratos);
+
+      document.getElementById('kpi-ativos').textContent = kpis.ativos;
+      document.getElementById('kpi-ativos-sub').textContent = `de ${kpis.total} cadastrado(s)`;
+      document.getElementById('kpi-principal').textContent = R2A.fmt.moeda(kpis.principalTotal, { sinal: false });
+      document.getElementById('kpi-liquido').textContent = R2A.fmt.moeda(kpis.liquidoTotal, { sinal: false });
+      document.getElementById('kpi-parcelas').textContent = kpis.parcelasPrevistas;
+
+      // Próximas parcelas (30 dias a partir de hoje)
+      const hoje = new Date();
+      const limite = new Date(hoje); limite.setDate(limite.getDate() + 30);
+      const tbody = document.getElementById('proximas-tbody');
+      const linhas = [];
+      contratos.forEach(c => {
+        (c.cronograma_parcelas || []).forEach(p => {
+          const dt = new Date(p.vencimento);
+          if (dt >= hoje && dt <= limite && p.valor > 0) {
+            linhas.push({ ...p, contrato: c });
+          }
+        });
+      });
+      linhas.sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+
+      if (linhas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="center" style="padding: 32px; color: var(--muted);">Nenhuma parcela nos próximos 30 dias</td></tr>`;
+      } else {
+        tbody.innerHTML = linhas.slice(0, 20).map(l => `
+          <tr>
+            <td>${R2A.fmt.data(l.vencimento)}</td>
+            <td><span class="banco-code">${l.contrato.banco_codigo_bacen || '—'}</span> ${l.contrato.banco}</td>
+            <td><a href="contrato.html?id=${l.contrato.id}" style="color: var(--accent-text); font-weight: 600;">${l.contrato.numero_contrato}</a></td>
+            <td class="center">${l.n}/${l.contrato.estrutura.qtd_parcelas}</td>
+            <td class="num">${R2A.fmt.moeda(l.valor, { sinal: false })}</td>
+            <td class="center"><span class="pill pendente">aberta</span></td>
+          </tr>
+        `).join('');
+      }
+    })();
+  }
+</script>
+
+</body>
+</html>

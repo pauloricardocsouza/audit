@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contratos · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.11">
+<link rel="stylesheet" href="contratos.css?v=0.11">
+</head>
+<body>
+
+<div class="r2a-shell">
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+      <section class="ct-wrap">
+
+        <div class="ct-page-head">
+          <div class="ct-page-title">
+            <h1>Contratos</h1>
+            <p>Carteira de contratos cadastrados. Clique em um contrato para ver o cronograma e o status de pagamento.</p>
+          </div>
+          <div class="ct-page-actions">
+            <a href="upload.html" class="btn btn-primary">+ Importar contrato</a>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="ct-list-toolbar">
+          <input type="text" class="search" id="busca" placeholder="Buscar por banco, número, produto…">
+          <select id="filtro-estado">
+            <option value="all">Todos os estados</option>
+            <option value="ativo">Ativos</option>
+            <option value="quitado">Quitados</option>
+            <option value="renegociado">Renegociados</option>
+            <option value="inadimplente">Inadimplentes</option>
+          </select>
+        </div>
+
+        <!-- Lista -->
+        <div class="ct-panel">
+          <div class="ct-panel-body flush">
+            <table class="ct-tbl">
+              <thead>
+                <tr>
+                  <th>Banco · contrato</th>
+                  <th>Produto</th>
+                  <th>Emissão</th>
+                  <th class="center">Prazo</th>
+                  <th class="num">Principal</th>
+                  <th class="num">Líquido</th>
+                  <th>Sistema</th>
+                  <th class="center">Estado</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+</div>
+
+<script src="../config.js?v=0.11"></script>
+<script src="../shared.js?v=0.11"></script>
+<script src="../mock-data.js?v=0.11"></script>
+<script src="../data.js?v=0.11"></script>
+<script src="contratos.js?v=0.11"></script>
+<script>
+  if (R2A.requireAuth()) {
+    R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
+    R2A.renderFooter();
+    R2A.data.init();
+
+    let todos = [];
+
+    function render(list) {
+      const tbody = document.getElementById('tbody');
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="center" style="padding: 48px; color: var(--muted);">Nenhum contrato encontrado</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(c => `
+        <tr onclick="window.location.href='contrato.html?id=${c.id}'">
+          <td>
+            <div class="banco">
+              <span class="banco-code">${c.banco_codigo_bacen || '—'}</span>
+              <strong>${c.banco}</strong>
+            </div>
+            <div class="contrato-num">${c.numero_contrato}</div>
+          </td>
+          <td>${R2A.contratos.fmtProduto(c.produto)}</td>
+          <td>${R2A.fmt.data(c.datas.emissao)}</td>
+          <td class="center">${c.estrutura.prazo_meses}m</td>
+          <td class="num">${R2A.fmt.moeda(c.valores.principal, { sinal: false })}</td>
+          <td class="num">${c.valores.liquido_liberado ? R2A.fmt.moeda(c.valores.liquido_liberado, { sinal: false }) : '—'}</td>
+          <td><span class="tag acc">${R2A.contratos.fmtSistema(c.estrutura.sistema_amortizacao_detectado)}</span></td>
+          <td class="center"><span class="pill ${c.estado === 'ativo' ? 'conciliado' : 'pendente'}">${c.estado}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function filtrar() {
+      const q = (document.getElementById('busca').value || '').toLowerCase().trim();
+      const estado = document.getElementById('filtro-estado').value;
+      const filtrados = todos.filter(c => {
+        if (estado !== 'all' && c.estado !== estado) return false;
+        if (!q) return true;
+        return (
+          c.banco.toLowerCase().includes(q) ||
+          c.numero_contrato.toLowerCase().includes(q) ||
+          (c.produto || '').toLowerCase().includes(q)
+        );
+      });
+      render(filtrados);
+    }
+
+    (async function () {
+      todos = await R2A.contratos.list();
+      render(todos);
+      document.getElementById('busca').addEventListener('input', filtrar);
+      document.getElementById('filtro-estado').addEventListener('change', filtrar);
+    })();
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador · R2 Audit</title>
+<link rel="stylesheet" href="../shared.css?v=0.11">
+<link rel="stylesheet" href="contratos.css?v=0.11">
+</head>
+<body>
+
+<div class="r2a-shell">
+  <aside class="r2a-sidebar"></aside>
+
+  <div class="r2a-main">
+    <header class="r2a-topbar"></header>
+
+    <div class="r2a-content">
+      <section class="ct-wrap">
+
+        <div class="ct-page-head">
+          <div class="ct-page-title">
+            <h1>Simulador de parcelas</h1>
+            <p>Sandbox para calcular cronograma sem importar PDF. Útil para sanity-check de contratos pré-fixados.</p>
+          </div>
+        </div>
+
+        <div class="ct-panel">
+          <div class="ct-panel-head"><div><h3>Parâmetros</h3></div></div>
+          <div class="ct-panel-body">
+            <div class="ct-sim-form">
+              <div class="field">
+                <label>Valor principal (R$)</label>
+                <input type="number" id="s-principal" value="1000000" step="1000">
+              </div>
+              <div class="field">
+                <label>Prazo (meses)</label>
+                <input type="number" id="s-prazo" value="24" min="1" max="120">
+              </div>
+              <div class="field">
+                <label>Carência (meses)</label>
+                <input type="number" id="s-carencia" value="0" min="0" max="24">
+              </div>
+              <div class="field">
+                <label>Taxa mensal (%)</label>
+                <input type="number" id="s-taxa" value="1.20" step="0.01">
+              </div>
+              <div class="field">
+                <label>Sistema</label>
+                <select id="s-sistema">
+                  <option value="price">Price (parcela fixa)</option>
+                  <option value="sac">SAC (amortização constante)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Data 1ª parcela</label>
+                <input type="date" id="s-data" value="2026-06-15">
+              </div>
+            </div>
+            <div style="margin-top: 14px; display: flex; gap: 10px;">
+              <button class="btn btn-primary" id="btn-simular">Simular</button>
+              <button class="btn btn-ghost" id="btn-limpar">Limpar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ct-panel">
+          <div class="ct-panel-head">
+            <div><h3>Cronograma simulado</h3></div>
+            <div class="sub" id="resumo-sub">—</div>
+          </div>
+          <div class="ct-panel-body flush">
+            <div class="ct-cronograma">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="center">#</th>
+                    <th>Vencimento</th>
+                    <th class="num">Juros</th>
+                    <th class="num">Amortização</th>
+                    <th class="num">Parcela</th>
+                    <th class="num">Saldo devedor</th>
+                  </tr>
+                </thead>
+                <tbody id="sim-tbody">
+                  <tr><td colspan="6" class="center" style="padding: 40px; color: var(--muted);">Preencha os parâmetros e clique em Simular</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <footer class="r2a-footer"></footer>
+  </div>
+</div>
+
+<script src="../config.js?v=0.11"></script>
+<script src="../shared.js?v=0.11"></script>
+<script src="../mock-data.js?v=0.11"></script>
+<script src="../data.js?v=0.11"></script>
+<script src="contratos.js?v=0.11"></script>
+<script>
+  if (R2A.requireAuth()) {
+    R2A.renderShell({ modulo: 'contratos', item: 'simulador' });
+    R2A.renderFooter();
+    R2A.data.init();
+
+    // Fase 1: calculador inline simples (Fase 3 promove para R2A.amortizacao)
+    function simularPrice(principal, taxa, prazo, carencia) {
+      const out = [];
+      let saldo = principal;
+      // carência: só juros
+      for (let i = 1; i <= carencia; i++) {
+        const juros = saldo * taxa;
+        out.push({ n: i, juros, amort: 0, parcela: juros, saldo });
+      }
+      const n = prazo - carencia;
+      const pmt = saldo * (taxa * Math.pow(1 + taxa, n)) / (Math.pow(1 + taxa, n) - 1);
+      for (let i = 1; i <= n; i++) {
+        const juros = saldo * taxa;
+        const amort = pmt - juros;
+        saldo -= amort;
+        out.push({ n: carencia + i, juros, amort, parcela: pmt, saldo: Math.max(0, saldo) });
+      }
+      return out;
+    }
+
+    function simularSAC(principal, taxa, prazo, carencia) {
+      const out = [];
+      let saldo = principal;
+      for (let i = 1; i <= carencia; i++) {
+        const juros = saldo * taxa;
+        out.push({ n: i, juros, amort: 0, parcela: juros, saldo });
+      }
+      const n = prazo - carencia;
+      const amort = saldo / n;
+      for (let i = 1; i <= n; i++) {
+        const juros = saldo * taxa;
+        const parcela = juros + amort;
+        saldo -= amort;
+        out.push({ n: carencia + i, juros, amort, parcela, saldo: Math.max(0, saldo) });
+      }
+      return out;
+    }
+
+    function addMeses(isoDate, n) {
+      const d = new Date(isoDate);
+      d.setMonth(d.getMonth() + n);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function simular() {
+      const principal = parseFloat(document.getElementById('s-principal').value) || 0;
+      const prazo = parseInt(document.getElementById('s-prazo').value) || 0;
+      const carencia = parseInt(document.getElementById('s-carencia').value) || 0;
+      const taxa = (parseFloat(document.getElementById('s-taxa').value) || 0) / 100;
+      const sistema = document.getElementById('s-sistema').value;
+      const dataIni = document.getElementById('s-data').value;
+
+      if (principal <= 0 || prazo <= 0 || taxa <= 0) {
+        R2A.toast('Preencha principal, prazo e taxa', 'warning');
+        return;
+      }
+
+      const cronograma = sistema === 'sac'
+        ? simularSAC(principal, taxa, prazo, carencia)
+        : simularPrice(principal, taxa, prazo, carencia);
+
+      const totalJuros = cronograma.reduce((s, p) => s + p.juros, 0);
+      const totalParc = cronograma.reduce((s, p) => s + p.parcela, 0);
+      document.getElementById('resumo-sub').textContent =
+        `Total pago ${R2A.fmt.moeda(totalParc, { sinal: false })} · juros ${R2A.fmt.moeda(totalJuros, { sinal: false })}`;
+
+      const tbody = document.getElementById('sim-tbody');
+      tbody.innerHTML = cronograma.map((p, idx) => `
+        <tr class="${p.amort === 0 ? 'carencia' : ''}">
+          <td class="center">${p.n}</td>
+          <td>${R2A.fmt.data(addMeses(dataIni, idx))}</td>
+          <td class="num">${R2A.fmt.moeda(p.juros, { sinal: false })}</td>
+          <td class="num">${p.amort > 0 ? R2A.fmt.moeda(p.amort, { sinal: false }) : '—'}</td>
+          <td class="num">${R2A.fmt.moeda(p.parcela, { sinal: false })}</td>
+          <td class="num">${R2A.fmt.moeda(p.saldo, { sinal: false })}</td>
+        </tr>
+      `).join('');
+    }
+
+    function limpar() {
+      document.getElementById('sim-tbody').innerHTML =
+        `<tr><td colspan="6" class="center" style="padding: 40px; color: var(--muted);">Preencha os parâmetros e clique em Simular</td></tr>`;
+      document.getElementById('resumo-sub').textContent = '—';
+    }
+
+    document.getElementById('btn-simular').addEventListener('click', simular);
+    document.getElementById('btn-limpar').addEventListener('click', limpar);
+  }
+</script>
+
+</body>
+</html>

@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login · R2 Audit</title>
-<link rel="stylesheet" href="shared.css?v=0.9">
+<link rel="stylesheet" href="shared.css?v=0.11">
 <style>
   body { background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
   .login-card { width: 100%; max-width: 380px; background: white; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); overflow: hidden; }
-  .login-head { padding: 28px 28px 20px; text-align: center; background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: white; }
+  .login-head { padding: 28px 28px 20px; text-align: center; background: linear-gradient(135deg, var(--gray-grad-dark) 0%, var(--gray-grad-mid) 100%); color: white; }
   .login-head .logo { display: block; margin: 0 auto 14px; max-width: 220px; width: 100%; height: auto; }
   .login-head h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.01em; }
   .login-head p { font-size: 12px; opacity: 0.85; }
@@ -53,14 +53,16 @@
   </div>
 
   <div class="login-footer">
-    R2 SOLUÇÕES EMPRESARIAIS · v0.9
+    R2 SOLUÇÕES EMPRESARIAIS · v0.11
   </div>
 </div>
 
-<script src="config.js?v=0.9"></script>
-<script src="shared.js?v=0.9"></script>
+<script src="config.js?v=0.11"></script>
+<script src="shared.js?v=0.11"></script>
 <script>
-  if (R2A_CONFIG.MODO_DEV) document.getElementById('dev-hint').style.display = 'block';
+  // dev-hint oculto durante teste privado (mesmo com MODO_DEV=true)
+  // Para reativar: descomente a linha abaixo
+  // if (R2A_CONFIG.MODO_DEV) document.getElementById('dev-hint').style.display = 'block';
   if (R2A.session.isLoggedIn()) window.location.href = 'index.html';
 
   function showErr(m) { const e = document.getElementById('err'); e.textContent = m; e.classList.add('show'); }

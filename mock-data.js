@@ -74,6 +74,161 @@ window.R2A_MOCK = {
     { id: 's22', conta: 'bradesco-001', data: '2026-05-22', desc: 'INSS Mai/26',                       valor: -2150.00, tipo: 'D', status: 'pendente' }
   ],
 
+  // ============================================================
+  // CONTRATOS · módulo Análise de Contratos
+  // Schemas reais (Sofisa e Safra) anonimizados para DEV
+  // Em produção virão da coleção `contratos` no Firestore
+  // ============================================================
+  CONTRATOS: (function () {
+    // Helper para gerar cronograma price-flutuante (parcelas crescentes Sofisa)
+    function cronoSofisa() {
+      const datas = [
+        '2025-12-26','2026-01-26','2026-02-26','2026-03-26','2026-04-26','2026-05-26',
+        '2026-06-26','2026-07-26','2026-08-26','2026-09-26','2026-10-26','2026-11-26',
+        '2026-12-26','2027-01-26','2027-02-26','2027-03-26','2027-04-26','2027-05-26',
+        '2027-06-26','2027-07-26','2027-08-26','2027-09-26','2027-10-26','2027-11-26'
+      ];
+      const valoresExt = [88446.73, 89057.02, 89671.51];
+      const valoresFim = [102186.84, 102891.93, 103601.88];
+      const out = [];
+      for (let i = 0; i < 24; i++) {
+        let v;
+        if (i < 3) v = valoresExt[i];
+        else if (i >= 21) v = valoresFim[i - 21];
+        else v = +(89671.51 + (102186.84 - 89671.51) * ((i - 2) / 19)).toFixed(2);
+        out.push({ n: i + 1, vencimento: datas[i], valor: v, tipo: 'amortizacao' });
+      }
+      return out;
+    }
+    // Helper para Safra com 6 meses de carência + 30 parcelas Price
+    function cronoSafra() {
+      const out = [];
+      const baseDate = new Date(2026, 2, 9); // 2026-03-09 (mês index 2 = março)
+      for (let i = 0; i < 36; i++) {
+        const d = new Date(baseDate);
+        d.setMonth(d.getMonth() + i);
+        // ajuste de dia útil (mantém dia 9 ou próximo)
+        const vencimento = d.toISOString().slice(0, 10);
+        if (i < 6) {
+          out.push({ n: i + 1, vencimento, valor: 0, tipo: 'carencia' });
+        } else if (i === 35) {
+          out.push({ n: i + 1, vencimento, valor: 36686.00, tipo: 'ajuste_final' });
+        } else {
+          out.push({ n: i + 1, vencimento, valor: 36666.00, tipo: 'amortizacao' });
+        }
+      }
+      return out;
+    }
+
+    return [
+      {
+        id: 'cnt-001',
+        banco: 'Banco Sofisa',
+        banco_codigo_bacen: '637',
+        produto: 'CCB',
+        numero_contrato: 'PII56430-6',
+        tomador: { razao_social: 'EMPRESA EXEMPLO LTDA', cnpj: '00.000.000/0001-00' },
+        avalistas: [{ nome: 'Avalista Pessoa Física', cpf_cnpj: '000.000.000-00' }],
+        valores: {
+          principal: 2300000.00, iof: 97981.10, tarifas: 15000.00, seguros: 0,
+          outros_custos: 0, liquido_liberado: 2187018.90,
+          composicao_principal_inclui: ['iof', 'tarifas']
+        },
+        datas: {
+          emissao: '2025-11-26', limite_desembolso: null,
+          primeira_parcela: '2025-12-26', ultima_parcela: '2027-11-26',
+          dia_vencimento_padrao: 26
+        },
+        estrutura: {
+          prazo_meses: 24, qtd_parcelas: 24,
+          carencia: { meses: 0, fonte: 'nenhuma' },
+          sistema_amortizacao_declarado: 'price',
+          sistema_amortizacao_detectado: 'price_flutuante'
+        },
+        taxa_juros: {
+          regime: 'flutuante_indexado',
+          componente_fixo_am: 0.0069, componente_fixo_aa: 0.086015,
+          indexador: 'CDI', indexador_percentual: 100,
+          cenarios_alternativos: [],
+          cet_aa: 0.116175
+        },
+        conta_debito: { banco: 'Sofisa', agencia: '00132', numero: '000000915-5', tipo: 'corrente' },
+        garantias: [
+          { tipo: 'aval', descricao: 'Avalista pessoa física', percentual: null },
+          { tipo: 'cessao_fiduciaria', descricao: 'Duplicatas eletrônicas', percentual: 70 },
+          { tipo: 'fundo_garantidor', descricao: 'FGI PEAC II', percentual: null }
+        ],
+        cronograma_parcelas: cronoSofisa(),
+        instrumentos_relacionados: [
+          { tipo: 'cessao_fiduciaria', numero: 'PII56430-6-DUP', ref_pdf: 'duplicatas.pdf' }
+        ],
+        qualidade_extracao: {
+          pdf_escaneado: false, ocr_aplicado: false, cronograma_extraido: true,
+          checkbox_amortizacao_marcado: true, cet_informado: true, campos_faltantes: []
+        },
+        pdf_original: {
+          nome: 'PII56430-6_CCB_Sofisa.pdf',
+          url: null,
+          tamanho_kb: 2287,
+          upload_em: '2025-11-26T10:00:00Z'
+        },
+        estado: 'ativo', contrato_origem_id: null
+      },
+      {
+        id: 'cnt-002',
+        banco: 'Banco Safra',
+        banco_codigo_bacen: '422',
+        produto: 'CCB',
+        numero_contrato: '003516147',
+        tomador: { razao_social: 'EMPRESA EXEMPLO LTDA', cnpj: '00.000.000/0001-00' },
+        avalistas: [{ nome: 'Avalista Pessoa Física', cpf_cnpj: '000.000.000-00' }],
+        valores: {
+          principal: 1100000.00, iof: 35787.13, tarifas: 6000.00, seguros: 0,
+          outros_custos: 0, liquido_liberado: 1058212.87,
+          composicao_principal_inclui: ['iof']
+        },
+        datas: {
+          emissao: '2026-02-09', limite_desembolso: null,
+          primeira_parcela: '2026-03-09', ultima_parcela: '2029-02-09',
+          dia_vencimento_padrao: 9
+        },
+        estrutura: {
+          prazo_meses: 36, qtd_parcelas: 36,
+          carencia: { meses: 6, fonte: 'parcelas_zeradas' },
+          sistema_amortizacao_declarado: 'price',
+          sistema_amortizacao_detectado: 'price'
+        },
+        taxa_juros: {
+          regime: 'flutuante_indexado',
+          componente_fixo_am: 0.0055, componente_fixo_aa: 0.068034,
+          indexador: 'CDI', indexador_percentual: 100,
+          cenarios_alternativos: [
+            { descricao: 'Outros meios de pagamento (não débito c/c Safra)', am: 0.00825, aa: 0.103618 }
+          ],
+          cet_aa: null
+        },
+        conta_debito: { banco: 'Safra', agencia: '15800', numero: '5838109', tipo: 'corrente' },
+        garantias: [
+          { tipo: 'aval', descricao: 'Avalista pessoa física', percentual: null },
+          { tipo: 'cessao_fiduciaria', descricao: 'Duplicatas', percentual: null }
+        ],
+        cronograma_parcelas: cronoSafra(),
+        instrumentos_relacionados: [],
+        qualidade_extracao: {
+          pdf_escaneado: false, ocr_aplicado: false, cronograma_extraido: true,
+          checkbox_amortizacao_marcado: true, cet_informado: false, campos_faltantes: ['cet_aa']
+        },
+        pdf_original: {
+          nome: '15800_3516147_Middle_Safra.pdf',
+          url: null,
+          tamanho_kb: 2370,
+          upload_em: '2026-02-09T14:30:00Z'
+        },
+        estado: 'ativo', contrato_origem_id: null
+      }
+    ];
+  })(),
+
   // Histórico mensal de conciliação (últimos 12 meses, para o Dashboard)
   // Em produção isso virá agregado do Firestore via query no período
   HISTORICO_MENSAL: [
