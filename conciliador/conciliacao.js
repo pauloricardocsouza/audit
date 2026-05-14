@@ -612,18 +612,55 @@
     renderAll();
   }
 
+  // -------- PERSISTÊNCIA DE FILTROS --------
+  const FILTROS_SCOPE = 'conciliacao';
+  const FILTROS_DEFAULTS = {
+    conta: 'all', status: 'all',
+    ini: '2026-05-01', fim: '2026-05-31',
+    qBanco: '', qSia: '', movimento: 'todos'
+  };
+
+  function snapshotFiltros() {
+    return {
+      conta:     document.getElementById('filter-conta').value,
+      status:    document.getElementById('filter-status').value,
+      ini:       document.getElementById('filter-ini').value,
+      fim:       document.getElementById('filter-fim').value,
+      qBanco:    document.getElementById('search-banco').value,
+      qSia:      document.getElementById('search-sia').value,
+      movimento: State.movimento
+    };
+  }
+
+  function aplicarFiltros(f) {
+    document.getElementById('filter-conta').value  = f.conta  || FILTROS_DEFAULTS.conta;
+    document.getElementById('filter-status').value = f.status || FILTROS_DEFAULTS.status;
+    document.getElementById('filter-ini').value    = f.ini    || FILTROS_DEFAULTS.ini;
+    document.getElementById('filter-fim').value    = f.fim    || FILTROS_DEFAULTS.fim;
+    document.getElementById('search-banco').value  = f.qBanco || '';
+    document.getElementById('search-sia').value    = f.qSia   || '';
+    State.movimento = f.movimento || FILTROS_DEFAULTS.movimento;
+    document.querySelectorAll('#movimento-toggle button').forEach(b =>
+      b.classList.toggle('active', b.dataset.mov === State.movimento)
+    );
+  }
+
+  function salvarFiltros() {
+    R2A.filtros.save(FILTROS_SCOPE, snapshotFiltros());
+  }
+
+  function restaurarFiltros() {
+    const f = R2A.filtros.load(FILTROS_SCOPE, FILTROS_DEFAULTS);
+    aplicarFiltros(f);
+  }
+
+  // Wrapper · sempre que render acontece, persiste o estado dos filtros
+  function renderAllPersist() { salvarFiltros(); renderAll(); }
+
   // -------- LIMPAR FILTROS --------
   function limparFiltros() {
-    document.getElementById('filter-conta').value = 'all';
-    document.getElementById('filter-status').value = 'all';
-    document.getElementById('filter-ini').value = '2026-05-01';
-    document.getElementById('filter-fim').value = '2026-05-31';
-    document.getElementById('search-banco').value = '';
-    document.getElementById('search-sia').value = '';
-    State.movimento = 'todos';
-    document.querySelectorAll('#movimento-toggle button').forEach(b =>
-      b.classList.toggle('active', b.dataset.mov === 'todos')
-    );
+    aplicarFiltros(FILTROS_DEFAULTS);
+    R2A.filtros.clear(FILTROS_SCOPE);
     renderAll();
   }
 
@@ -634,15 +671,15 @@
         document.querySelectorAll('#movimento-toggle button').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
         State.movimento = b.dataset.mov;
-        renderAll();
+        renderAllPersist();
       });
     });
 
     ['filter-conta', 'filter-status', 'filter-ini', 'filter-fim'].forEach(id =>
-      document.getElementById(id).addEventListener('change', renderAll)
+      document.getElementById(id).addEventListener('change', renderAllPersist)
     );
     ['search-banco', 'search-sia'].forEach(id =>
-      document.getElementById(id).addEventListener('input', renderAll)
+      document.getElementById(id).addEventListener('input', renderAllPersist)
     );
 
     // delegação de cliques em linhas
@@ -681,6 +718,7 @@
     R2A.renderShell({ modulo: 'conciliador', item: 'conciliacao' });
     R2A.renderFooter();
     await carregarDados();
+    restaurarFiltros();
     wire();
     bindVirtualScroll();
     renderAll();

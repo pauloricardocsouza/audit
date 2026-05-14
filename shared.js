@@ -374,6 +374,24 @@
   };
 
   // ----------------------------------------------------------
+  // FILTROS PERSISTENTES (por scope no localStorage)
+  // ----------------------------------------------------------
+  R2A.filtros = {
+    save(scope, obj) {
+      try { localStorage.setItem('r2a_filt_' + scope, JSON.stringify(obj)); } catch {}
+    },
+    load(scope, fallback) {
+      try {
+        const raw = localStorage.getItem('r2a_filt_' + scope);
+        return raw ? JSON.parse(raw) : (fallback || {});
+      } catch { return fallback || {}; }
+    },
+    clear(scope) {
+      try { localStorage.removeItem('r2a_filt_' + scope); } catch {}
+    }
+  };
+
+  // ----------------------------------------------------------
   // NOTIFICAÇÕES (sino do topbar)
   // ----------------------------------------------------------
   R2A.notifications = {
