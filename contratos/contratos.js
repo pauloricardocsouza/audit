@@ -132,6 +132,10 @@
 
   // Vincula um lançamento bancário a uma parcela específica
   R2A.contratos.vincularParcela = async function (contratoId, parcelaN, lancamentoBancoId) {
+    const lanc = await R2A.data.get(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO, lancamentoBancoId);
+    if (lanc && R2A.periodos && R2A.periodos.assertAberto) {
+      await R2A.periodos.assertAberto(lanc.data, 'vincular parcela');
+    }
     const patch = {
       vinculo_contrato: { contratoId, parcelaN, vinculadoEm: new Date().toISOString() },
       status: 'conciliado'
@@ -144,8 +148,10 @@
   R2A.contratos.desvincularParcela = async function (lancamentoBancoId) {
     const lanc = await R2A.data.get(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO, lancamentoBancoId);
     if (!lanc) return false;
+    if (R2A.periodos && R2A.periodos.assertAberto) {
+      await R2A.periodos.assertAberto(lanc.data, 'desvincular parcela');
+    }
     const vinculoAnterior = lanc.vinculo_contrato;
-    // remove o campo via update (Firestore-friendly seria FieldValue.delete; em DEV usamos null)
     await R2A.data.update(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO, lancamentoBancoId, {
       vinculo_contrato: null,
       status: 'pendente'
@@ -157,23 +163,27 @@
   // Auto-vincula parcelas que têm UM ÚNICO candidato dentro da tolerância
   R2A.contratos.autoVincular = async function (contratoId) {
     const contrato = await R2A.contratos.get(contratoId);
-    if (!contrato) return { vinculados: 0, ambiguos: 0 };
+    if (!contrato) return { vinculados: 0, ambiguos: 0, bloqueados: 0 };
     const lancs = await R2A.data.list(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO);
     const matches = R2A.contratos.matchParcelas(contrato, lancs);
 
-    let vinculados = 0, ambiguos = 0;
+    let vinculados = 0, ambiguos = 0, bloqueados = 0;
     for (const m of matches) {
-      // só auto-vincula se já não está vinculado e tem candidato único
       if (m.tipo === 'carencia') continue;
       if (m.pago && m.pago.vinculoManual) continue;
       if (m.candidatos && m.candidatos.length === 1 && m.pago) {
-        await R2A.contratos.vincularParcela(contratoId, m.n, m.pago.ref);
-        vinculados++;
+        try {
+          await R2A.contratos.vincularParcela(contratoId, m.n, m.pago.ref);
+          vinculados++;
+        } catch (e) {
+          if (e.code === 'PERIODO_FECHADO') bloqueados++;
+          else throw e;
+        }
       } else if (m.candidatos && m.candidatos.length > 1) {
         ambiguos++;
       }
     }
-    return { vinculados, ambiguos };
+    return { vinculados, ambiguos, bloqueados };
   };
 
   // ----------------------------------------------------------

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fechamento · R2 Audit</title>
+<link rel="stylesheet" href="../styles/theme.css?v=0.18">
+<link rel="stylesheet" href="../shared.css?v=0.18">
+<style>
+  .per-wrap { padding: 0; }
+  .per-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+  .per-head h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .per-head p { font-size: 13px; color: var(--ink-3); }
+  .per-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .per-tbl thead th {
+    background: var(--navy-tint);
+    padding: 11px 18px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-4);
+    font-weight: 600;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .per-tbl thead th.num    { text-align: right; }
+  .per-tbl thead th.center { text-align: center; }
+  .per-tbl tbody td {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line-2);
+    color: var(--ink-2);
+  }
+  .per-tbl tbody tr:last-child td { border-bottom: 0; }
+  .per-tbl tbody tr.fechado { background: var(--navy-tint); }
+  .per-tbl td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink-1); }
+  .per-tbl td.center { text-align: center; }
+  .per-tbl .mes-label { font-weight: 600; color: var(--ink-1); font-variant-numeric: tabular-nums; }
+  .per-tbl .meta { font-size: 11px; color: var(--ink-4); margin-top: 2px; font-family: var(--font-mono); }
+  .per-info-card {
+    background: var(--navy-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+  .per-info-card .ico {
+    width: 36px; height: 36px;
+    background: var(--surface);
+    border-radius: var(--r-md);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--navy);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="r2a-shell r2-app">
+  <aside class="r2a-sidebar r2-side"></aside>
+
+  <div class="r2a-main r2-main">
+    <header class="r2a-topbar r2-top"></header>
+
+    <div class="r2a-content r2-content">
+      <section class="per-wrap">
+
+        <div class="per-head">
+          <div>
+            <h1>Fechamento de período</h1>
+            <p>Cada mês fechado bloqueia conciliações, vínculos de contrato e alterações nos lançamentos daquele período. Apenas administradores podem fechar ou reabrir.</p>
+          </div>
+        </div>
+
+        <div class="per-info-card" id="info-card">
+          <div class="ico">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div id="info-text">
+            Carregando informações de fechamento…
+          </div>
+        </div>
+
+        <div class="r2-card">
+          <div class="r2-card__head">
+            <div>
+              <h3 class="r2-card__title">Meses do período de operação</h3>
+              <div class="r2-card__hint">Reúne todos os meses com lançamentos bancários ou do sistema. Mês corrente e futuros não são listados aqui.</div>
+            </div>
+          </div>
+          <div class="r2-card__body r2-card__body--flush">
+            <table class="per-tbl">
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th class="num">Lançamentos</th>
+                  <th class="num">Valor movimentado</th>
+                  <th>Status</th>
+                  <th>Observação</th>
+                  <th class="center">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-per">
+                <tr><td colspan="6" style="padding: 32px; text-align: center; color: var(--ink-4);">Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <footer class="r2a-footer r2-footer"></footer>
+  </div>
+</div>
+
+<!-- Modal genérico (estilo legado .r2a-modal compatível) -->
+<div class="r2a-modal-backdrop" id="modal-per">
+  <div class="r2a-modal" style="max-width: 480px;">
+    <div class="r2a-modal-header">
+      <h3 class="r2a-modal-title" id="modal-per-title">Fechar mês</h3>
+      <button class="r2a-modal-close" id="modal-per-close">✕</button>
+    </div>
+    <div class="r2a-modal-body" id="modal-per-body"></div>
+    <div class="r2a-modal-footer">
+      <button class="r2-btn r2-btn--ghost" id="modal-per-cancel">Cancelar</button>
+      <button class="r2-btn r2-btn--primary" id="modal-per-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../config.js?v=0.18"></script>
+<script src="../shared.js?v=0.18"></script>
+<script src="../mock-data.js?v=0.18"></script>
+<script src="../data.js?v=0.18"></script>
+<script>
+  if (R2A.requireAuth()) {
+    R2A.renderShell({ modulo: 'conciliador', item: 'periodos' });
+    R2A.renderFooter();
+    R2A.data.init();
+
+    const u = R2A.session.user();
+    const isAdmin = u.perfil === 'admin';
+
+    const modal = document.getElementById('modal-per');
+    const modalTitle = document.getElementById('modal-per-title');
+    const modalBody = document.getElementById('modal-per-body');
+    const modalConfirm = document.getElementById('modal-per-confirm');
+    document.getElementById('modal-per-close').addEventListener('click', () => modal.classList.remove('open'));
+    document.getElementById('modal-per-cancel').addEventListener('click', () => modal.classList.remove('open'));
+    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+    const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    function fmtMes(iso) { const [y, m] = iso.split('-'); return `${meses[+m - 1]}/${y}`; }
+
+    async function render() {
+      const C = R2A_CONFIG.COLLECTIONS;
+      const banco = await R2A.data.list(C.LANCAMENTOS_BANCO);
+      const sia   = await R2A.data.list(C.LANCAMENTOS_SIA);
+      const periodos = await R2A.periodos.list();
+
+      // Agrupa por mês
+      const agg = new Map();
+      function bump(iso, valor) {
+        if (!iso) return;
+        const mes = String(iso).slice(0, 7);
+        if (!agg.has(mes)) agg.set(mes, { mes, qtd: 0, valor: 0 });
+        const a = agg.get(mes); a.qtd++; a.valor += Math.abs(valor || 0);
+      }
+      banco.forEach(b => bump(b.data, b.valor));
+      sia.forEach(s => bump(s.data, s.valor));
+
+      const hoje = new Date();
+      const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+
+      // Só meses anteriores ao mês corrente
+      const lista = Array.from(agg.values())
+        .filter(a => a.mes < mesAtual)
+        .sort((a, b) => b.mes.localeCompare(a.mes));
+
+      const totalFechados = periodos.filter(p => p.status === 'fechado').length;
+      const totalAbertos  = lista.length - totalFechados;
+      document.getElementById('info-text').innerHTML = `
+        <strong>${totalAbertos} mês(es) aberto(s)</strong> · ${totalFechados} fechado(s).
+        ${isAdmin ? 'Você pode fechar ou reabrir qualquer período.' : 'Apenas administradores podem fechar ou reabrir períodos.'}
+      `;
+
+      const tbody = document.getElementById('tbody-per');
+      if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding: 32px; text-align: center; color: var(--ink-4);">Nenhum mês com lançamentos · importe extratos para começar.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = lista.map(a => {
+        const p = periodos.find(x => x.mes === a.mes);
+        const fechado = p && p.status === 'fechado';
+        let meta = '';
+        if (fechado) {
+          meta = `<div class="meta">fechado em ${R2A.fmt.dataHora(p.fechado_em)} por ${p.fechado_por_nome || '—'}</div>`;
+        } else if (p && p.reaberto_em) {
+          meta = `<div class="meta">reaberto em ${R2A.fmt.dataHora(p.reaberto_em)} por ${p.reaberto_por_nome || '—'}</div>`;
+        }
+        const obs = p && p.observacao ? p.observacao : '—';
+        const status = fechado
+          ? '<span class="r2-status" data-kind="conciliado" style="color: var(--ink-2)">fechado</span>'
+          : '<span class="r2-status" data-kind="pendente" style="color: var(--ink-2)">aberto</span>';
+        const acao = !isAdmin
+          ? '<span class="r2-mute" style="font-size: 11px;">apenas admin</span>'
+          : fechado
+            ? `<button class="r2-btn r2-btn--ghost r2-btn--sm" data-act="reabrir" data-mes="${a.mes}">↺ Reabrir</button>`
+            : `<button class="r2-btn r2-btn--primary r2-btn--sm" data-act="fechar" data-mes="${a.mes}">⊠ Fechar</button>`;
+        return `
+          <tr class="${fechado ? 'fechado' : ''}">
+            <td>
+              <div class="mes-label">${fmtMes(a.mes)}</div>
+              ${meta}
+            </td>
+            <td class="num">${a.qtd}</td>
+            <td class="num">${R2A.fmt.moeda(a.valor, { sinal: false })}</td>
+            <td>${status}</td>
+            <td style="color: var(--ink-3); font-size: 12px;">${obs}</td>
+            <td class="center">${acao}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Bind dos botões
+      tbody.querySelectorAll('button[data-act]').forEach(btn => {
+        btn.addEventListener('click', () => abrirModal(btn.dataset.act, btn.dataset.mes));
+      });
+    }
+
+    function abrirModal(acao, mes) {
+      const labelMes = fmtMes(mes);
+      if (acao === 'fechar') {
+        modalTitle.textContent = `Fechar ${labelMes}`;
+        modalBody.innerHTML = `
+          <p style="margin-bottom: 14px; color: var(--ink-3); font-size: 13px;">
+            Fechar este mês vai bloquear: novas conciliações, alterações de status (ignorar/justificar/em análise),
+            vínculos de parcela de contrato e reversões de lançamentos com data em <strong>${labelMes}</strong>.
+            Você pode reabrir depois se necessário.
+          </p>
+          <div class="r2a-form">
+            <div class="field">
+              <label>Observação (opcional)</label>
+              <input type="text" id="modal-per-obs" placeholder="Ex: fechamento contábil mensal" class="r2-input">
+            </div>
+          </div>
+        `;
+        modalConfirm.textContent = 'Fechar mês';
+        modalConfirm.className = 'r2-btn r2-btn--primary';
+        modalConfirm.onclick = async () => {
+          const obs = document.getElementById('modal-per-obs').value.trim();
+          try {
+            await R2A.periodos.fechar(mes, obs);
+            R2A.toast(`${labelMes} fechado`, 'success');
+            modal.classList.remove('open');
+            await render();
+          } catch (e) {
+            R2A.toast(e.message || 'Erro ao fechar', 'error');
+          }
+        };
+      } else {
+        modalTitle.textContent = `Reabrir ${labelMes}`;
+        modalBody.innerHTML = `
+          <p style="margin-bottom: 14px; color: var(--ink-3); font-size: 13px;">
+            Reabrir <strong>${labelMes}</strong> volta a permitir alterações em lançamentos com essa data.
+            Toda reabertura fica registrada na trilha de auditoria.
+          </p>
+          <div class="r2a-form">
+            <div class="field">
+              <label>Motivo da reabertura</label>
+              <input type="text" id="modal-per-obs" placeholder="Ex: correção de lançamento de tarifa" class="r2-input">
+            </div>
+          </div>
+        `;
+        modalConfirm.textContent = 'Reabrir mês';
+        modalConfirm.className = 'r2-btn r2-btn--danger';
+        modalConfirm.onclick = async () => {
+          const obs = document.getElementById('modal-per-obs').value.trim();
+          try {
+            await R2A.periodos.reabrir(mes, obs);
+            R2A.toast(`${labelMes} reaberto`, 'success');
+            modal.classList.remove('open');
+            await render();
+          } catch (e) {
+            R2A.toast(e.message || 'Erro ao reabrir', 'error');
+          }
+        };
+      }
+      modal.classList.add('open');
+    }
+
+    render();
+  }
+</script>
+
+</body>
+</html>

@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contrato · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.17">
-<link rel="stylesheet" href="../shared.css?v=0.17">
-<link rel="stylesheet" href="contratos.css?v=0.17">
+<link rel="stylesheet" href="../styles/theme.css?v=0.18">
+<link rel="stylesheet" href="../shared.css?v=0.18">
+<link rel="stylesheet" href="contratos.css?v=0.18">
 <style>
   .parcela-acoes { display: flex; gap: 4px; justify-content: center; }
   .parcela-acoes .btn-sm { padding: 3px 8px; font-size: 10px; }
@@ -80,11 +80,11 @@
   </div>
 </div>
 
-<script src="../config.js?v=0.17"></script>
-<script src="../shared.js?v=0.17"></script>
-<script src="../mock-data.js?v=0.17"></script>
-<script src="../data.js?v=0.17"></script>
-<script src="contratos.js?v=0.17"></script>
+<script src="../config.js?v=0.18"></script>
+<script src="../shared.js?v=0.18"></script>
+<script src="../mock-data.js?v=0.18"></script>
+<script src="../data.js?v=0.18"></script>
+<script src="contratos.js?v=0.18"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
@@ -185,7 +185,8 @@
             await render();
           } catch (e) {
             console.error(e);
-            R2A.toast('Erro ao vincular: ' + (e.message || 'desconhecido'), 'error');
+            const msg = e.code === 'PERIODO_FECHADO' ? e.message : ('Erro ao vincular: ' + (e.message || 'desconhecido'));
+            R2A.toast(msg, 'error', 5000);
           }
         });
       });
@@ -205,7 +206,8 @@
         await render();
       } catch (e) {
         console.error(e);
-        R2A.toast('Erro ao desvincular: ' + (e.message || 'desconhecido'), 'error');
+        const msg = e.code === 'PERIODO_FECHADO' ? e.message : ('Erro ao desvincular: ' + (e.message || 'desconhecido'));
+        R2A.toast(msg, 'error', 5000);
       }
     }
 
@@ -217,7 +219,10 @@
       if (!ok) return;
       try {
         const r = await R2A.contratos.autoVincular(id);
-        R2A.toast(`${r.vinculados} vinculada(s) automaticamente${r.ambiguos ? ` · ${r.ambiguos} ambíguo(s) precisam de revisão manual` : ''}`, 'success', 5000);
+        const extras = [];
+        if (r.ambiguos) extras.push(`${r.ambiguos} ambíguo(s) precisam de revisão manual`);
+        if (r.bloqueados) extras.push(`${r.bloqueados} bloqueada(s) por mês fechado`);
+        R2A.toast(`${r.vinculados} vinculada(s) automaticamente${extras.length ? ' · ' + extras.join(' · ') : ''}`, 'success', 5000);
         await render();
       } catch (e) {
         console.error(e);

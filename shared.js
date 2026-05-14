@@ -365,6 +365,87 @@
   R2A.$$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
   // ----------------------------------------------------------
+  // PERÍODOS · fechamento contábil mensal
+  // Cada documento: { id, mes: 'YYYY-MM', status: 'aberto'|'fechado',
+  //                   fechado_por_uid, fechado_por_nome, fechado_em,
+  //                   reaberto_por_uid, reaberto_em, observacao }
+  // ----------------------------------------------------------
+  R2A.periodos = {
+    _cache: null,
+    _cacheAt: 0,
+
+    async list() {
+      // Cache curto (5 segundos) para não bater no storage a cada checagem
+      if (this._cache && (Date.now() - this._cacheAt) < 5000) return this._cache;
+      const arr = await R2A.data.list(CFG.COLLECTIONS.PERIODOS);
+      this._cache = arr;
+      this._cacheAt = Date.now();
+      return arr;
+    },
+
+    async get(mes) {
+      const all = await this.list();
+      return all.find(p => p.mes === mes) || null;
+    },
+
+    // Retorna true se o mês daquela data está fechado
+    async estaFechado(dataISO) {
+      if (!dataISO) return false;
+      const mes = String(dataISO).slice(0, 7);
+      const p = await this.get(mes);
+      return p && p.status === 'fechado';
+    },
+
+    async fechar(mes, observacao = '') {
+      const u = R2A.session.user();
+      if (u.perfil !== 'admin') throw new Error('Apenas admin pode fechar períodos');
+      const existente = await this.get(mes);
+      const patch = {
+        mes,
+        status: 'fechado',
+        fechado_por_uid: u.uid,
+        fechado_por_nome: u.nome,
+        fechado_em: new Date().toISOString(),
+        observacao: observacao || (existente && existente.observacao) || ''
+      };
+      this._cache = null;
+      if (existente) {
+        await R2A.data.update(CFG.COLLECTIONS.PERIODOS, existente.id, patch);
+      } else {
+        await R2A.data.add(CFG.COLLECTIONS.PERIODOS, patch);
+      }
+      R2A.auditar('periodo.fechar', { mes });
+    },
+
+    async reabrir(mes, observacao = '') {
+      const u = R2A.session.user();
+      if (u.perfil !== 'admin') throw new Error('Apenas admin pode reabrir períodos');
+      const existente = await this.get(mes);
+      if (!existente) throw new Error('Período não encontrado');
+      this._cache = null;
+      await R2A.data.update(CFG.COLLECTIONS.PERIODOS, existente.id, {
+        status: 'aberto',
+        reaberto_por_uid: u.uid,
+        reaberto_por_nome: u.nome,
+        reaberto_em: new Date().toISOString(),
+        observacao: observacao || existente.observacao || ''
+      });
+      R2A.auditar('periodo.reabrir', { mes });
+    },
+
+    // Sentinel pra usar em guards: lança erro se data cair em mês fechado
+    async assertAberto(dataISO, contexto = 'operação') {
+      if (await this.estaFechado(dataISO)) {
+        const mes = String(dataISO).slice(0, 7);
+        const err = new Error(`Mês ${mes} está fechado · ${contexto} bloqueada. Solicite reabertura ao admin.`);
+        err.code = 'PERIODO_FECHADO';
+        err.mes = mes;
+        throw err;
+      }
+    }
+  };
+
+  // ----------------------------------------------------------
   // AMORTIZAÇÃO · Price e SAC determinísticos
   // taxa em decimal mensal (0.01 = 1% a.m.), prazo e carência em meses
   // dataInicio: data ISO da primeira parcela

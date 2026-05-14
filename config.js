@@ -3,7 +3,7 @@
 // ============================================================
 window.R2A_CONFIG = {
   APP_NAME: 'R2 Audit',
-  APP_VERSION: '0.17',
+  APP_VERSION: '0.18',
   COMPANY: 'R2 SOLUÇÕES EMPRESARIAIS',
   DOMAIN: 'audit.solucoesr2.com.br',
 
@@ -67,6 +67,7 @@ window.R2A_CONFIG = {
         { id: 'processamento', label: 'Processamento', href: 'conciliador/processamento.html', icon: '⇪' },
         { id: 'conciliacao',   label: 'Conciliação',   href: 'conciliador/conciliacao.html',   icon: '⇄' },
         { id: 'relatorios',    label: 'Relatórios',    href: 'conciliador/relatorios.html',    icon: '≡' },
+        { id: 'periodos',      label: 'Fechamento',    href: 'conciliador/periodos.html',      icon: '⊠' },
         { id: 'cadastros',     label: 'Cadastros',     href: 'conciliador/cadastros.html',     icon: '☰' }
       ]
     },

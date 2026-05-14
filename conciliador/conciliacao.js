@@ -333,11 +333,21 @@
   }
 
   // -------- MATCH MANUAL --------
-  function manualMatch() {
+  async function manualMatch() {
     if (State.sel.banco.size === 0 || State.sel.sia.size === 0) return;
 
     const banco = [...State.sel.banco].map(id => State.banco.find(x => x.id === id));
     const sia = [...State.sel.sia].map(id => State.sia.find(x => x.id === id));
+
+    // Bloqueio por período fechado
+    const datas = new Set();
+    [...banco, ...sia].forEach(it => { if (it && it.data) datas.add(String(it.data).slice(0, 7)); });
+    for (const mes of datas) {
+      if (await R2A.periodos.estaFechado(mes + '-01')) {
+        R2A.toast(`Mês ${mes} está fechado · solicite reabertura ao admin`, 'error', 5000);
+        return;
+      }
+    }
 
     const sumB = banco.reduce((a, x) => a + x.valor, 0);
     const sumS = sia.reduce((a, x) => a + x.valor, 0);
@@ -374,15 +384,33 @@
     try { await R2A.data.update(col, id, { status }); } catch (e) { console.warn('persistirStatus falhou', e); }
   }
 
+  // Verifica se alguma das datas selecionadas cai em mês fechado
+  async function bloqueadoPorPeriodo(ids, lista) {
+    const datas = new Set();
+    ids.forEach(id => { const it = lista.find(x => x.id === id); if (it && it.data) datas.add(String(it.data).slice(0, 7)); });
+    for (const mes of datas) {
+      if (await R2A.periodos.estaFechado(mes + '-01')) return mes;
+    }
+    return null;
+  }
+
   // -------- AÇÕES DE STATUS --------
   async function applyStatus(status) {
+    const idsBanco = [...State.sel.banco];
+    const idsSia = [...State.sel.sia];
+    const bloqB = await bloqueadoPorPeriodo(idsBanco, State.banco);
+    const bloqS = await bloqueadoPorPeriodo(idsSia, State.sia);
+    if (bloqB || bloqS) {
+      R2A.toast(`Mês ${bloqB || bloqS} está fechado · solicite reabertura ao admin`, 'error', 5000);
+      return;
+    }
     let n = 0;
     const pend = [];
-    State.sel.banco.forEach(id => {
+    idsBanco.forEach(id => {
       const it = State.banco.find(x => x.id === id);
       if (it) { it.status = status; n++; pend.push(persistirStatus('banco', id, status)); }
     });
-    State.sel.sia.forEach(id => {
+    idsSia.forEach(id => {
       const it = State.sia.find(x => x.id === id);
       if (it) { it.status = status; n++; pend.push(persistirStatus('sia', id, status)); }
     });
