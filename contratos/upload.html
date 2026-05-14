@@ -4,8 +4,127 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Importar contrato · R2 Audit</title>
-<link rel="stylesheet" href="../shared.css?v=0.11">
-<link rel="stylesheet" href="contratos.css?v=0.11">
+<link rel="stylesheet" href="../shared.css?v=0.12">
+<link rel="stylesheet" href="contratos.css?v=0.12">
+<style>
+  /* Wizard 3 passos */
+  .wiz-steps {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+  }
+  .wiz-step {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+  }
+  .wiz-step .n {
+    width: 22px; height: 22px;
+    background: var(--surface-3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+  .wiz-step.active { background: var(--accent-bg); border-color: var(--accent-text); color: var(--accent-text); }
+  .wiz-step.active .n { background: var(--accent-text); color: white; }
+  .wiz-step.done { color: var(--success-text); border-color: var(--success); }
+  .wiz-step.done .n { background: var(--success); color: white; }
+
+  .wiz-panel { display: none; }
+  .wiz-panel.active { display: block; }
+
+  /* Form de revisão */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px 18px;
+    margin-bottom: 8px;
+  }
+  @media (max-width: 900px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+  .form-grid .field { display: flex; flex-direction: column; gap: 4px; }
+  .form-grid .field.col-2 { grid-column: span 2; }
+  .form-grid .field.col-3 { grid-column: span 3; }
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea {
+    width: 100%;
+    font-family: inherit;
+  }
+  .form-grid textarea {
+    min-height: 80px;
+    resize: vertical;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .form-section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    font-weight: 700;
+    margin: 14px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Preview de texto extraído */
+  .pdf-preview {
+    max-height: 280px;
+    overflow-y: auto;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--text-2);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .upload-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .upload-summary .item {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .upload-summary .item .lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .upload-summary .item .val {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 2px;
+    word-break: break-word;
+  }
+</style>
 </head>
 <body>
 
@@ -21,50 +140,278 @@
         <div class="ct-page-head">
           <div class="ct-page-title">
             <h1>Importar contrato</h1>
-            <p>Envie o PDF do contrato. O sistema extrai o texto, identifica os campos e simula o cronograma.</p>
+            <p>Envie o PDF, valide os dados extraídos e salve. Funciona 100% local em DEV (sem LLM ainda).</p>
+          </div>
+          <div class="ct-page-actions">
+            <a href="contratos.html" class="btn btn-ghost">← Voltar à lista</a>
           </div>
         </div>
 
-        <!-- Dropzone (Fase 1: visual; Fase 2: funcional com PDF.js) -->
-        <div class="ct-dropzone" id="dropzone">
-          <div class="ct-dropzone-icon">⇪</div>
-          <h3>Solte o PDF aqui</h3>
-          <p>ou clique para escolher um arquivo</p>
-          <span class="hint">PDF até 25 MB · 1 contrato por vez</span>
+        <!-- Steps -->
+        <div class="wiz-steps">
+          <div class="wiz-step active" id="step-1"><span class="n">1</span> Upload do PDF</div>
+          <div class="wiz-step" id="step-2"><span class="n">2</span> Texto extraído</div>
+          <div class="wiz-step" id="step-3"><span class="n">3</span> Revisão e salvar</div>
         </div>
 
-        <!-- Pipeline preview -->
-        <div class="ct-panel">
-          <div class="ct-panel-head">
-            <div>
-              <h3>Pipeline de leitura</h3>
-              <div class="sub">As fases abaixo serão implementadas nas próximas iterações</div>
+        <!-- PASSO 1 · UPLOAD -->
+        <div class="wiz-panel active" id="panel-1">
+          <div class="ct-dropzone" id="dropzone">
+            <div class="ct-dropzone-icon">⇪</div>
+            <h3>Solte o PDF aqui</h3>
+            <p>ou clique para escolher um arquivo</p>
+            <span class="hint">PDF até 25 MB · 1 contrato por vez</span>
+          </div>
+          <input type="file" id="file-input" accept="application/pdf" style="display:none">
+
+          <div class="ct-panel" style="background: var(--surface-2);">
+            <div class="ct-panel-body">
+              <span class="form-section-title" style="margin-top:0;">Pipeline</span>
+              <ol style="padding-left: 18px; line-height: 1.8; font-size: 12px; color: var(--text-2);">
+                <li>PDF.js extrai o texto no seu navegador (arquivo nunca sai do cliente)</li>
+                <li>Se o texto sair vazio, marca <code>requer_ocr</code> (Claude Vision via Function entra na Fase 5)</li>
+                <li>Você revisa os campos num formulário e salva</li>
+                <li>O contrato fica disponível em <a href="contratos.html">/contratos</a> e cruza com lançamentos bancários da Fase 4</li>
+              </ol>
             </div>
           </div>
-          <div class="ct-panel-body">
-            <ol style="padding-left: 18px; line-height: 1.9; font-size: 13px; color: var(--text-2);">
-              <li><strong>Extração local</strong> (Fase 2) · PDF.js no navegador lê o texto. PDF nunca sai do cliente nesta etapa.</li>
-              <li><strong>Detecção de escaneamento</strong> (Fase 2) · se o texto sair vazio, aciona OCR via Claude Vision.</li>
-              <li><strong>Estruturação</strong> (Fase 5) · Claude (Anthropic) recebe o texto + schema e devolve JSON com banco, valor, prazo, taxa, sistema de amortização, cronograma, garantias.</li>
-              <li><strong>Revisão humana</strong> (Fase 2) · usuário valida o JSON extraído em formulário antes de salvar.</li>
-              <li><strong>Persistência</strong> (Fase 2) · Firestore <code>contratos</code> + cronograma inline.</li>
-              <li><strong>Match com extratos</strong> (Fase 4) · cruza cronograma com <code>lancamentos_banco</code> (tolerância ±5 dias, ±5% no valor).</li>
-            </ol>
+        </div>
+
+        <!-- PASSO 2 · TEXTO EXTRAÍDO -->
+        <div class="wiz-panel" id="panel-2">
+          <div class="upload-summary" id="upload-summary"></div>
+
+          <div class="ct-panel">
+            <div class="ct-panel-head">
+              <div>
+                <h3>Texto extraído</h3>
+                <div class="sub" id="extract-meta">—</div>
+              </div>
+              <div id="extract-flags"></div>
+            </div>
+            <div class="ct-panel-body">
+              <div class="pdf-preview" id="pdf-preview"></div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-ghost" id="btn-voltar-1">← Trocar arquivo</button>
+            <button class="btn btn-primary" id="btn-ir-3">Revisar e preencher campos →</button>
           </div>
         </div>
 
-        <!-- Aviso Fase 1 -->
-        <div class="ct-panel" style="border-color: var(--highlight); background: var(--highlight-bg);">
-          <div class="ct-panel-body">
-            <strong style="color: var(--highlight-text);">⚠ Fase 1 · esqueleto não-funcional</strong><br>
-            <span style="font-size: 13px; color: var(--text-2);">
-              O upload ainda não processa o PDF. Por enquanto, os contratos disponíveis vêm do mock.
-              A funcionalidade real entra na Fase 2 (PDF.js + formulário manual) e na Fase 5 (Claude extrai os campos).
-            </span>
-            <div style="margin-top: 12px;">
-              <a href="contratos.html" class="btn">Ver contratos no mock</a>
-              <a href="simulador.html" class="btn btn-ghost">Abrir simulador</a>
+        <!-- PASSO 3 · FORM -->
+        <div class="wiz-panel" id="panel-3">
+          <div class="ct-panel">
+            <div class="ct-panel-head"><div><h3>Identificação</h3></div></div>
+            <div class="ct-panel-body">
+              <div class="form-grid">
+                <div class="field">
+                  <label>Banco *</label>
+                  <input id="f-banco" type="text" placeholder="Banco Sofisa">
+                </div>
+                <div class="field">
+                  <label>Código Bacen</label>
+                  <input id="f-banco-codigo" type="text" placeholder="637" maxlength="4">
+                </div>
+                <div class="field">
+                  <label>Produto *</label>
+                  <select id="f-produto">
+                    <option value="CCB">CCB</option>
+                    <option value="CapitalGiro">Capital de giro</option>
+                    <option value="ContaGarantida">Conta garantida</option>
+                    <option value="AntecipacaoDuplicatas">Antecipação de duplicatas</option>
+                    <option value="FCO">FCO</option>
+                    <option value="Outros">Outros</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Número do contrato *</label>
+                  <input id="f-numero" type="text" placeholder="PII56430-6">
+                </div>
+                <div class="field col-2">
+                  <label>Razão social do tomador *</label>
+                  <input id="f-tomador-nome" type="text" placeholder="EMPRESA EXEMPLO LTDA">
+                </div>
+                <div class="field">
+                  <label>CNPJ</label>
+                  <input id="f-tomador-cnpj" type="text" placeholder="00.000.000/0001-00">
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div class="ct-panel">
+            <div class="ct-panel-head"><div><h3>Valores</h3></div></div>
+            <div class="ct-panel-body">
+              <div class="form-grid">
+                <div class="field">
+                  <label>Principal (R$) *</label>
+                  <input id="f-principal" type="number" step="0.01" placeholder="2300000.00">
+                </div>
+                <div class="field">
+                  <label>IOF (R$)</label>
+                  <input id="f-iof" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="field">
+                  <label>Tarifas (R$)</label>
+                  <input id="f-tarifas" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="field">
+                  <label>Seguros (R$)</label>
+                  <input id="f-seguros" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="field col-2">
+                  <label>Líquido liberado (R$)</label>
+                  <input id="f-liquido" type="number" step="0.01" placeholder="auto-calcula se vazio">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ct-panel">
+            <div class="ct-panel-head"><div><h3>Datas e estrutura</h3></div></div>
+            <div class="ct-panel-body">
+              <div class="form-grid">
+                <div class="field">
+                  <label>Data de emissão *</label>
+                  <input id="f-emissao" type="date">
+                </div>
+                <div class="field">
+                  <label>Data da 1ª parcela *</label>
+                  <input id="f-1parcela" type="date">
+                </div>
+                <div class="field">
+                  <label>Dia de vencimento</label>
+                  <input id="f-dia-venc" type="number" min="1" max="31" placeholder="26">
+                </div>
+                <div class="field">
+                  <label>Prazo (meses) *</label>
+                  <input id="f-prazo" type="number" min="1" max="240" placeholder="24">
+                </div>
+                <div class="field">
+                  <label>Carência (meses)</label>
+                  <input id="f-carencia" type="number" min="0" max="36" value="0">
+                </div>
+                <div class="field">
+                  <label>Fonte da carência</label>
+                  <select id="f-carencia-fonte">
+                    <option value="nenhuma">nenhuma</option>
+                    <option value="explicita">explícita (no contrato)</option>
+                    <option value="parcelas_zeradas">parcelas iniciais zeradas</option>
+                    <option value="gap_emissao_primeira_amort">gap entre emissão e 1ª amort.</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Sistema declarado</label>
+                  <select id="f-sist-declarado">
+                    <option value="price">Price</option>
+                    <option value="sac">SAC</option>
+                    <option value="bullet">Bullet</option>
+                    <option value="nao_informado">Não informado</option>
+                  </select>
+                </div>
+                <div class="field col-2">
+                  <label>Sistema detectado</label>
+                  <select id="f-sist-detectado">
+                    <option value="price">Price</option>
+                    <option value="sac">SAC</option>
+                    <option value="bullet">Bullet</option>
+                    <option value="price_flutuante">Price flutuante (com CDI sobre saldo)</option>
+                    <option value="principal_flat_juros_separados">Principal flat (juros separados)</option>
+                    <option value="misto">Misto</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ct-panel">
+            <div class="ct-panel-head"><div><h3>Taxa de juros</h3></div></div>
+            <div class="ct-panel-body">
+              <div class="form-grid">
+                <div class="field">
+                  <label>Regime</label>
+                  <select id="f-taxa-regime">
+                    <option value="flutuante_indexado">Flutuante indexado</option>
+                    <option value="pre_fixado">Pré-fixado</option>
+                    <option value="pos_fixado">Pós-fixado</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Indexador</label>
+                  <select id="f-taxa-indexador">
+                    <option value="">—</option>
+                    <option value="CDI">CDI</option>
+                    <option value="IPCA">IPCA</option>
+                    <option value="TR">TR</option>
+                    <option value="Selic">Selic</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>% do indexador</label>
+                  <input id="f-taxa-indexador-pct" type="number" step="0.01" placeholder="100">
+                </div>
+                <div class="field">
+                  <label>Spread a.m. (decimal: 0.0069 = 0,69%)</label>
+                  <input id="f-taxa-am" type="number" step="0.000001" placeholder="0.0069">
+                </div>
+                <div class="field">
+                  <label>Spread a.a. (decimal)</label>
+                  <input id="f-taxa-aa" type="number" step="0.000001" placeholder="0.086015">
+                </div>
+                <div class="field">
+                  <label>CET a.a. (decimal)</label>
+                  <input id="f-taxa-cet" type="number" step="0.000001" placeholder="0.116175">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ct-panel">
+            <div class="ct-panel-head"><div><h3>Conta de débito e garantias</h3></div></div>
+            <div class="ct-panel-body">
+              <div class="form-grid">
+                <div class="field">
+                  <label>Banco</label>
+                  <input id="f-cc-banco" type="text" placeholder="Sofisa">
+                </div>
+                <div class="field">
+                  <label>Agência</label>
+                  <input id="f-cc-ag" type="text" placeholder="00132">
+                </div>
+                <div class="field">
+                  <label>Conta</label>
+                  <input id="f-cc-num" type="text" placeholder="000000915-5">
+                </div>
+                <div class="field col-3">
+                  <label>Garantias (uma por linha: tipo:descricao:percentual)</label>
+                  <textarea id="f-garantias" placeholder="aval:Avalista pessoa fisica:&#10;cessao_fiduciaria:Duplicatas eletronicas:70&#10;fundo_garantidor:FGI PEAC II:"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ct-panel">
+            <div class="ct-panel-head">
+              <div>
+                <h3>Cronograma de parcelas</h3>
+                <div class="sub">CSV simples · uma parcela por linha · data;valor;tipo (amortizacao | carencia | ajuste_final)</div>
+              </div>
+              <button class="btn btn-sm" id="btn-gerar-cronograma" type="button">Gerar Price simples</button>
+            </div>
+            <div class="ct-panel-body">
+              <div class="form-grid">
+                <div class="field col-3">
+                  <textarea id="f-cronograma" placeholder="2025-12-26;88446.73;amortizacao&#10;2026-01-26;89057.02;amortizacao&#10;2026-02-26;89671.51;amortizacao"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 22px;">
+            <button class="btn btn-ghost" id="btn-voltar-2">← Voltar ao texto</button>
+            <button class="btn btn-primary" id="btn-salvar">✓ Salvar contrato</button>
           </div>
         </div>
 
@@ -75,33 +422,13 @@
   </div>
 </div>
 
-<script src="../config.js?v=0.11"></script>
-<script src="../shared.js?v=0.11"></script>
-<script src="../mock-data.js?v=0.11"></script>
-<script src="../data.js?v=0.11"></script>
-<script src="contratos.js?v=0.11"></script>
-<script>
-  if (R2A.requireAuth()) {
-    R2A.renderShell({ modulo: 'contratos', item: 'upload' });
-    R2A.renderFooter();
-    R2A.data.init();
-
-    // Dropzone visual (sem processamento ainda)
-    const dz = document.getElementById('dropzone');
-    ['dragenter','dragover'].forEach(ev => {
-      dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); });
-    });
-    ['dragleave','drop'].forEach(ev => {
-      dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); });
-    });
-    dz.addEventListener('drop', e => {
-      R2A.toast('Upload entra na Fase 2 (PDF.js). Por enquanto use o mock.', 'info', 4000);
-    });
-    dz.addEventListener('click', () => {
-      R2A.toast('Upload entra na Fase 2 (PDF.js). Por enquanto use o mock.', 'info', 4000);
-    });
-  }
-</script>
+<!-- PDF.js é importado dentro do upload.js (módulo ESM) -->
+<script src="../config.js?v=0.12"></script>
+<script src="../shared.js?v=0.12"></script>
+<script src="../mock-data.js?v=0.12"></script>
+<script src="../data.js?v=0.12"></script>
+<script src="contratos.js?v=0.12"></script>
+<script type="module" src="upload.js?v=0.12"></script>
 
 </body>
 </html>

@@ -11,7 +11,7 @@
   const M = window.R2A_MOCK || {};
 
   const LS_PREFIX = 'r2a_';
-  const SEED_VERSION = '2'; // bumpe quando o mock mudar para forçar re-seed
+  const SEED_VERSION = '3'; // bumpe quando o mock mudar para forçar re-seed
   const R2A = window.R2A = window.R2A || {};
 
   // ------------------------------------------------------------
@@ -43,6 +43,15 @@
       { id: 'u1', nome: 'Ricardo Pereira', email: 'ricardo@solucoesr2.com.br', perfil: 'admin' },
       { id: 'u2', nome: 'Operador Teste',  email: 'operador@solucoesr2.com.br', perfil: 'operador' }
     ]);
+
+    // Contratos: merge com o existente (usuário pode ter importado contratos)
+    if (M.CONTRATOS) {
+      const existentes = lsLoad(CFG.COLLECTIONS.CONTRATOS);
+      const idsMock = new Set(M.CONTRATOS.map(c => c.id));
+      const importadosPeloUsuario = existentes.filter(c => !idsMock.has(c.id));
+      const mockClone = M.CONTRATOS.map(c => JSON.parse(JSON.stringify(c)));
+      lsSave(CFG.COLLECTIONS.CONTRATOS, [...mockClone, ...importadosPeloUsuario]);
+    }
 
     localStorage.setItem(seedKey, SEED_VERSION);
     console.info('[R2A] Seed aplicado · versão ' + SEED_VERSION);

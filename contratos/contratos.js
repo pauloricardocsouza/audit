@@ -11,18 +11,23 @@
   R2A.contratos = R2A.contratos || {};
 
   // ----------------------------------------------------------
-  // Acesso aos contratos (DEV: mock; PROD: Firestore via R2A.data)
+  // Acesso aos contratos · sempre via R2A.data (DEV: localStorage com
+  // seed do mock + importados pelo upload; PROD: Firestore)
   // ----------------------------------------------------------
   R2A.contratos.list = async function () {
-    if (window.R2A_CONFIG && window.R2A_CONFIG.MODO_DEV) {
-      return (window.R2A_MOCK && window.R2A_MOCK.CONTRATOS) || [];
-    }
     return await R2A.data.list(R2A_CONFIG.COLLECTIONS.CONTRATOS);
   };
 
   R2A.contratos.get = async function (id) {
-    const all = await R2A.contratos.list();
-    return all.find(c => c.id === id) || null;
+    return await R2A.data.get(R2A_CONFIG.COLLECTIONS.CONTRATOS, id);
+  };
+
+  R2A.contratos.add = async function (contrato) {
+    return await R2A.data.add(R2A_CONFIG.COLLECTIONS.CONTRATOS, contrato);
+  };
+
+  R2A.contratos.update = async function (id, patch) {
+    return await R2A.data.update(R2A_CONFIG.COLLECTIONS.CONTRATOS, id, patch);
   };
 
   // ----------------------------------------------------------
