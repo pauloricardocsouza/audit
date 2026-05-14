@@ -11,7 +11,7 @@
   const M = window.R2A_MOCK || {};
 
   const LS_PREFIX = 'r2a_';
-  const SEED_VERSION = '4'; // bumpe quando o mock mudar para forçar re-seed
+  const SEED_VERSION = '5'; // bumpe quando o mock mudar para forçar re-seed
   const R2A = window.R2A = window.R2A || {};
 
   // ------------------------------------------------------------

@@ -166,18 +166,47 @@
               <input type="text" id="f-numero" placeholder="12345-6" value="${c.numero || ''}">
             </div>
           </div>
+          <div class="field" id="f-vinc-wrap" style="display: none;">
+            <label>Conta corrente vinculada <span class="req">*</span></label>
+            <select id="f-vinc"><option value="">— selecione —</option></select>
+            <div class="r2a-form-hint" style="margin-top: 6px;">
+              Transferências entre esta garantida e a conta corrente vinculada serão conciliadas automaticamente pela Onda 0.
+            </div>
+          </div>
           <div class="r2a-form-hint" id="tipo-hint"></div>
         </div>
       `,
       onConfirm: () => salvarConta(id)
     });
 
-    // Mostrar dica do tipo selecionado
+    // Repopular select da conta vinculada conforme o banco/tipo
+    const updateVinc = () => {
+      const tipo = document.getElementById('f-tipo').value;
+      const banco = document.getElementById('f-banco').value;
+      const wrap = document.getElementById('f-vinc-wrap');
+      const sel = document.getElementById('f-vinc');
+      if (tipo !== 'garantida') {
+        wrap.style.display = 'none';
+        return;
+      }
+      wrap.style.display = '';
+      // Lista CCs do mesmo banco (exceto a propria, se editando)
+      const candidatas = State.contas.filter(x =>
+        x.id !== id && x.tipo === 'corrente' && (banco ? x.banco === banco : true)
+      );
+      const atual = c.conta_vinculada_id || '';
+      sel.innerHTML = '<option value="">— selecione —</option>' +
+        candidatas.map(x => `<option value="${x.id}" ${x.id === atual ? 'selected' : ''}>${x.apelido} · ag. ${x.agencia} · c/c ${x.numero}</option>`).join('');
+    };
+
+    // Mostrar dica do tipo selecionado + atualizar select de vinculo
     const updateHint = () => {
       const t = CFG.TIPOS_CONTA.find(x => x.id === document.getElementById('f-tipo').value);
       document.getElementById('tipo-hint').textContent = t ? t.descricao : '';
+      updateVinc();
     };
     document.getElementById('f-tipo').addEventListener('change', updateHint);
+    document.getElementById('f-banco').addEventListener('change', updateVinc);
     updateHint();
   }
 
@@ -187,9 +216,14 @@
     const banco = document.getElementById('f-banco').value;
     const agencia = document.getElementById('f-agencia').value.trim();
     const numero = document.getElementById('f-numero').value.trim();
+    const vincEl = document.getElementById('f-vinc');
+    const conta_vinculada_id = (tipo === 'garantida' && vincEl) ? vincEl.value || null : null;
 
     if (!apelido || !tipo || !banco || !agencia || !numero) {
       return showFormError('Preencha todos os campos obrigatórios');
+    }
+    if (tipo === 'garantida' && !conta_vinculada_id) {
+      return showFormError('Conta garantida precisa de uma conta corrente vinculada');
     }
 
     // Validação de duplicidade (banco + agência + número + tipo)
@@ -203,7 +237,7 @@
     );
     if (dup) return showFormError('Já existe uma conta com esse banco, agência, número e tipo');
 
-    const data = { apelido, tipo, banco, agencia, numero, ativo: true };
+    const data = { apelido, tipo, banco, agencia, numero, ativo: true, conta_vinculada_id };
 
     if (id) {
       await R2A.data.update(C.CONTAS, id, data);

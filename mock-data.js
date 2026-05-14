@@ -7,7 +7,7 @@ window.R2A_MOCK = {
 
   CONTAS: [
     { id: 'bb-001',       banco: 'Banco do Brasil', agencia: '0001-2', numero: '12345-6',   apelido: 'BB · Movimento',          tipo: 'corrente' },
-    { id: 'bb-001-g',     banco: 'Banco do Brasil', agencia: '0001-2', numero: '12345-6/G', apelido: 'BB · Garantida',          tipo: 'garantida' },
+    { id: 'bb-001-g',     banco: 'Banco do Brasil', agencia: '0001-2', numero: '12345-6/G', apelido: 'BB · Garantida',          tipo: 'garantida', conta_vinculada_id: 'bb-001' },
     { id: 'itau-001',     banco: 'Itaú',            agencia: '4520',   numero: '98765-4',   apelido: 'Itaú · Operacional',      tipo: 'corrente' },
     { id: 'bradesco-001', banco: 'Bradesco',        agencia: '1234',   numero: '55555-5',   apelido: 'Bradesco · Folha',        tipo: 'corrente' },
     { id: 'sofisa-001',   banco: 'Banco Sofisa',    agencia: '00132',  numero: '000000915-5', apelido: 'Sofisa · Capital Giro', tipo: 'corrente' }
@@ -36,6 +36,13 @@ window.R2A_MOCK = {
     { id: 'b10', conta: 'bb-001',       data: '2026-05-13', hist: 'IOF · Operação 4423',                 valor: -42.30,   tipo: 'D', status: 'pendente' },
     { id: 'b11', conta: 'bb-001',       data: '2026-05-15', hist: 'PIX Enviado · ALUGUEL MAI',           valor: -6500.00, tipo: 'D', status: 'pendente' },
     { id: 'b12', conta: 'itau-001',     data: '2026-05-16', hist: 'TED Recebida · CLIENTE PJ',           valor: 8900.00,  tipo: 'C', status: 'pendente' },
+
+    // Par de transferências espelhadas entre CC e Garantida (Onda 0)
+    { id: 'b-esp1-cc', conta: 'bb-001',   data: '2026-05-04', hist: 'TED Recebida · Conta Garantida 12345-6/G',    valor: 15000.00, tipo: 'C', status: 'pendente' },
+    { id: 'b-esp1-cg', conta: 'bb-001-g', data: '2026-05-04', hist: 'TED Enviada · Conta Corrente 12345-6',        valor: -15000.00, tipo: 'D', status: 'pendente' },
+    // Segundo par espelhado (retorno · pagamento da garantida)
+    { id: 'b-esp2-cc', conta: 'bb-001',   data: '2026-05-19', hist: 'TED Enviada · Conta Garantida 12345-6/G',     valor: -8000.00, tipo: 'D', status: 'pendente' },
+    { id: 'b-esp2-cg', conta: 'bb-001-g', data: '2026-05-19', hist: 'TED Recebida · Conta Corrente 12345-6',       valor: 8000.00,  tipo: 'C', status: 'pendente' },
 
     // Lançamentos casáveis com as primeiras parcelas do contrato Sofisa PII56430-6 (cnt-001)
     { id: 'b-cnt1-p1', conta: 'sofisa-001', data: '2025-12-26', hist: 'Débito automático · CCB Sofisa PII56430-6 parcela 01', valor: -88446.73, tipo: 'D', status: 'pendente' },

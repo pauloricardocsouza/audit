@@ -247,6 +247,71 @@
     renderAll();
   }
 
+  // -------- ONDA 0: TRANSFERÊNCIAS ESPELHADAS CC ↔ GARANTIDA --------
+  // Para cada conta tipo 'garantida' com conta_vinculada_id, procura
+  // pares (CC ↔ CG) onde valor absoluto bate, data igual e sinais opostos,
+  // ambos pendentes. Marca ambos como conciliado em um passe.
+  async function runEspelhadas() {
+    const contas = await R2A.data.list(CFG.COLLECTIONS.CONTAS);
+    const garantidas = contas.filter(c => c.tipo === 'garantida' && c.conta_vinculada_id);
+    if (garantidas.length === 0) {
+      R2A.toast('Nenhuma conta garantida com CC vinculada · cadastre o vínculo em Cadastros', 'info', 5000);
+      return;
+    }
+
+    let totalPares = 0;
+    const pend = [];
+
+    for (const cg of garantidas) {
+      const ccId = cg.conta_vinculada_id;
+      const lancCG = State.banco.filter(b =>
+        b.conta === cg.id &&
+        statusOf(b, 'banco') === 'pendente'
+      );
+      const lancCC = State.banco.filter(b =>
+        b.conta === ccId &&
+        statusOf(b, 'banco') === 'pendente'
+      );
+
+      // Para cada lançamento da garantida, procura par espelhado na CC
+      const usadosCC = new Set();
+      for (const lcg of lancCG) {
+        const par = lancCC.find(lcc =>
+          !usadosCC.has(lcc.id) &&
+          lcc.data === lcg.data &&
+          Math.abs(lcc.valor) === Math.abs(lcg.valor) &&
+          ((lcc.valor > 0) !== (lcg.valor > 0))
+        );
+        if (par) {
+          usadosCC.add(par.id);
+          lcg.status = 'conciliado';
+          par.status = 'conciliado';
+          lcg.vinculo_espelhado = par.id;
+          par.vinculo_espelhado = lcg.id;
+          pend.push(R2A.data.update(CFG.COLLECTIONS.LANCAMENTOS_BANCO, lcg.id, {
+            status: 'conciliado',
+            vinculo_espelhado: par.id
+          }));
+          pend.push(R2A.data.update(CFG.COLLECTIONS.LANCAMENTOS_BANCO, par.id, {
+            status: 'conciliado',
+            vinculo_espelhado: lcg.id
+          }));
+          totalPares++;
+        }
+      }
+    }
+
+    await Promise.all(pend);
+
+    if (totalPares === 0) {
+      R2A.toast('Nenhuma transferência espelhada encontrada nesta janela', 'warning');
+    } else {
+      R2A.toast(`${totalPares} par(es) espelhado(s) conciliado(s) automaticamente`, 'success');
+      R2A.auditar('onda0_espelhadas', { qtd_pares: totalPares });
+    }
+    renderAll();
+  }
+
   // -------- ONDA 1: 1:1 --------
   async function runWave1() {
     State.banco.forEach(x => delete x._ambiguo);
@@ -593,6 +658,8 @@
     document.getElementById('check-all-sia').addEventListener('change', e => toggleAll('sia', e.target.checked));
 
     // botões
+    const btnEsp = document.getElementById('btn-espelhadas');
+    if (btnEsp) btnEsp.addEventListener('click', runEspelhadas);
     document.getElementById('btn-wave1').addEventListener('click', runWave1);
     document.getElementById('btn-wave2').addEventListener('click', runWave2);
     document.getElementById('btn-match-manual').addEventListener('click', manualMatch);
