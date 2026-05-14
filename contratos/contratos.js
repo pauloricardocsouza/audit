@@ -31,23 +31,67 @@
   };
 
   // ----------------------------------------------------------
-  // Match com lancamentos_banco · Fase 4 (versão inicial)
-  // Tolerância: data ±5d, valor ±5% sobre a parcela esperada
+  // Match parcelas × lançamentos · Fase 4
+  // Prioridade: vinculo_contrato gravado > match auto por data/valor
+  // Tolerância automática: data ±5d, valor ±5%
   // ----------------------------------------------------------
+  const TOL_DIAS = 5;
+  const TOL_VALOR_PCT = 0.05;
+
+  function statusPagoPorDiferenca(valorEsperado, valorBanco) {
+    const diff = valorBanco - valorEsperado;
+    if (Math.abs(diff) / valorEsperado <= 0.001) return 'pago';
+    return diff > 0 ? 'pago_maior' : 'pago_menor';
+  }
+
   R2A.contratos.matchParcelas = function (contrato, lancamentosBanco) {
-    const TOL_DIAS = 5;
-    const TOL_VALOR_PCT = 0.05;
     const hoje = new Date().toISOString().slice(0, 10);
+    const lancs = lancamentosBanco || [];
+
+    // 1) índice de vínculos manuais existentes (lançamentos já gravados como dessa parcela)
+    const vinculosPorParcela = new Map();
+    lancs.forEach(b => {
+      if (b.vinculo_contrato && b.vinculo_contrato.contratoId === contrato.id) {
+        vinculosPorParcela.set(b.vinculo_contrato.parcelaN, b);
+      }
+    });
+
+    // 2) ids já vinculados (não devem virar candidatos de outras parcelas)
+    const idsVinculados = new Set();
+    lancs.forEach(b => {
+      if (b.vinculo_contrato) idsVinculados.add(b.id);
+    });
 
     return contrato.cronograma_parcelas.map(parc => {
       if (parc.tipo === 'carencia' || parc.valor === 0) {
-        return { ...parc, status: 'carencia', pago: null };
+        return { ...parc, status: 'carencia', pago: null, candidatos: [] };
       }
 
-      // procura lançamento bancário compatível
       const vencDate = new Date(parc.vencimento);
       const valorEsperado = Math.abs(parc.valor);
-      const candidatos = (lancamentosBanco || []).filter(b => {
+
+      // Vínculo manual tem prioridade
+      const vincManual = vinculosPorParcela.get(parc.n);
+      if (vincManual) {
+        const valorBanco = Math.abs(vincManual.valor);
+        return {
+          ...parc,
+          status: statusPagoPorDiferenca(valorEsperado, valorBanco),
+          pago: {
+            data: vincManual.data,
+            valor: valorBanco,
+            diferenca: +(valorBanco - valorEsperado).toFixed(2),
+            ref: vincManual.id,
+            hist: vincManual.hist || '',
+            vinculoManual: true
+          },
+          candidatos: []
+        };
+      }
+
+      // Match automático entre lançamentos ainda não vinculados
+      const candidatos = lancs.filter(b => {
+        if (idsVinculados.has(b.id)) return false;
         if (b.tipo !== 'D') return false;
         const dt = new Date(b.data);
         const diasDiff = Math.abs((dt - vencDate) / (1000 * 60 * 60 * 24));
@@ -55,38 +99,81 @@
         const valorBanco = Math.abs(b.valor);
         const diffPct = Math.abs(valorBanco - valorEsperado) / valorEsperado;
         return diffPct <= TOL_VALOR_PCT;
-      });
+      }).map(b => ({
+        ...b,
+        _diasDiff: Math.abs((new Date(b.data) - vencDate) / (1000 * 60 * 60 * 24)),
+        _diffPct: Math.abs(Math.abs(b.valor) - valorEsperado) / valorEsperado
+      })).sort((a, b) => (a._diasDiff + a._diffPct) - (b._diasDiff + b._diffPct));
 
       if (candidatos.length === 0) {
         const status = parc.vencimento < hoje ? 'atraso' : 'aberta';
-        return { ...parc, status, pago: null };
+        return { ...parc, status, pago: null, candidatos: [] };
       }
 
-      // pega o mais próximo em data
-      const escolhido = candidatos.sort((a, b) => {
-        const da = Math.abs(new Date(a.data) - vencDate);
-        const db = Math.abs(new Date(b.data) - vencDate);
-        return da - db;
-      })[0];
-
+      // Match único e seguro → sugere como "pago automático"
+      const escolhido = candidatos[0];
       const valorBanco = Math.abs(escolhido.valor);
-      const diff = valorBanco - valorEsperado;
-      let status = 'pago';
-      if (Math.abs(diff) / valorEsperado > 0.001) {
-        status = diff > 0 ? 'pago_maior' : 'pago_menor';
-      }
-
       return {
         ...parc,
-        status,
+        status: statusPagoPorDiferenca(valorEsperado, valorBanco),
         pago: {
           data: escolhido.data,
           valor: valorBanco,
-          diferenca: +diff.toFixed(2),
-          ref: escolhido.id
-        }
+          diferenca: +(valorBanco - valorEsperado).toFixed(2),
+          ref: escolhido.id,
+          hist: escolhido.hist || '',
+          vinculoManual: false,
+          ambiguidade: candidatos.length > 1
+        },
+        candidatos: candidatos.slice(0, 10)
       };
     });
+  };
+
+  // Vincula um lançamento bancário a uma parcela específica
+  R2A.contratos.vincularParcela = async function (contratoId, parcelaN, lancamentoBancoId) {
+    const patch = {
+      vinculo_contrato: { contratoId, parcelaN, vinculadoEm: new Date().toISOString() },
+      status: 'conciliado'
+    };
+    await R2A.data.update(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO, lancamentoBancoId, patch);
+    R2A.auditar('contrato.parcela.vincular', { contratoId, parcelaN, lancamentoBancoId });
+    return true;
+  };
+
+  R2A.contratos.desvincularParcela = async function (lancamentoBancoId) {
+    const lanc = await R2A.data.get(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO, lancamentoBancoId);
+    if (!lanc) return false;
+    const vinculoAnterior = lanc.vinculo_contrato;
+    // remove o campo via update (Firestore-friendly seria FieldValue.delete; em DEV usamos null)
+    await R2A.data.update(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO, lancamentoBancoId, {
+      vinculo_contrato: null,
+      status: 'pendente'
+    });
+    R2A.auditar('contrato.parcela.desvincular', { lancamentoBancoId, anterior: vinculoAnterior });
+    return true;
+  };
+
+  // Auto-vincula parcelas que têm UM ÚNICO candidato dentro da tolerância
+  R2A.contratos.autoVincular = async function (contratoId) {
+    const contrato = await R2A.contratos.get(contratoId);
+    if (!contrato) return { vinculados: 0, ambiguos: 0 };
+    const lancs = await R2A.data.list(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO);
+    const matches = R2A.contratos.matchParcelas(contrato, lancs);
+
+    let vinculados = 0, ambiguos = 0;
+    for (const m of matches) {
+      // só auto-vincula se já não está vinculado e tem candidato único
+      if (m.tipo === 'carencia') continue;
+      if (m.pago && m.pago.vinculoManual) continue;
+      if (m.candidatos && m.candidatos.length === 1 && m.pago) {
+        await R2A.contratos.vincularParcela(contratoId, m.n, m.pago.ref);
+        vinculados++;
+      } else if (m.candidatos && m.candidatos.length > 1) {
+        ambiguos++;
+      }
+    }
+    return { vinculados, ambiguos };
   };
 
   // ----------------------------------------------------------

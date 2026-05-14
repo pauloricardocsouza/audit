@@ -11,7 +11,7 @@
   const M = window.R2A_MOCK || {};
 
   const LS_PREFIX = 'r2a_';
-  const SEED_VERSION = '3'; // bumpe quando o mock mudar para forçar re-seed
+  const SEED_VERSION = '4'; // bumpe quando o mock mudar para forçar re-seed
   const R2A = window.R2A = window.R2A || {};
 
   // ------------------------------------------------------------
@@ -52,6 +52,31 @@
       const mockClone = M.CONTRATOS.map(c => JSON.parse(JSON.stringify(c)));
       lsSave(CFG.COLLECTIONS.CONTRATOS, [...mockClone, ...importadosPeloUsuario]);
     }
+
+    // BANCO e SIA: seed preservando vínculos com contrato e status conciliado
+    function seedLancamentos(colKey, mockArr) {
+      if (!mockArr) return;
+      const antigos = lsLoad(colKey);
+      const mapAnt = new Map(antigos.map(b => [b.id, b]));
+      const merged = mockArr.map(b => {
+        const ant = mapAnt.get(b.id);
+        if (ant) {
+          // preserva campos que o usuário pode ter alterado (vínculo de contrato, status conciliado, observações)
+          const presv = {};
+          if (ant.vinculo_contrato) presv.vinculo_contrato = ant.vinculo_contrato;
+          if (ant.status && ant.status !== 'pendente') presv.status = ant.status;
+          if (ant.observacao) presv.observacao = ant.observacao;
+          return { ...b, ...presv };
+        }
+        return { ...b };
+      });
+      // mantém também lançamentos extras criados pelo usuário (id não no mock)
+      const idsMock = new Set(mockArr.map(b => b.id));
+      const extras = antigos.filter(b => !idsMock.has(b.id));
+      lsSave(colKey, [...merged, ...extras]);
+    }
+    seedLancamentos(CFG.COLLECTIONS.LANCAMENTOS_BANCO, M.BANCO);
+    seedLancamentos(CFG.COLLECTIONS.LANCAMENTOS_SIA, M.SIA);
 
     localStorage.setItem(seedKey, SEED_VERSION);
     console.info('[R2A] Seed aplicado · versão ' + SEED_VERSION);

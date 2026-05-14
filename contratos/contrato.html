@@ -4,8 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contrato · R2 Audit</title>
-<link rel="stylesheet" href="../shared.css?v=0.12">
-<link rel="stylesheet" href="contratos.css?v=0.12">
+<link rel="stylesheet" href="../shared.css?v=0.13">
+<link rel="stylesheet" href="contratos.css?v=0.13">
+<style>
+  .parcela-acoes { display: flex; gap: 4px; justify-content: center; }
+  .parcela-acoes .btn-sm { padding: 3px 8px; font-size: 10px; }
+  .ct-vinc-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ct-vinc-tbl thead th {
+    background: var(--surface-2);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .ct-vinc-tbl thead th.num { text-align: right; }
+  .ct-vinc-tbl tbody td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .ct-vinc-tbl tbody td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .ct-vinc-tbl tbody tr { cursor: pointer; transition: background 0.1s; }
+  .ct-vinc-tbl tbody tr:hover { background: var(--accent-bg); }
+  .ct-vinc-tbl .diff-warn { color: var(--warning); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+  .vinc-info {
+    background: var(--accent-bg);
+    border-left: 3px solid var(--accent-text);
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    font-size: 12px;
+  }
+  .vinc-info strong { color: var(--accent-text); }
+  .ct-parcela-status.status-pago { color: var(--success-text); }
+  .ct-parcela-status.status-pago_menor { color: var(--warning); }
+  .ct-parcela-status.status-pago_maior { color: var(--violet-text); }
+  .ct-parcela-status.status-atraso { color: var(--danger-text); }
+  .ct-parcela-status.status-aberta { color: var(--text-muted); }
+  .ct-parcela-status.status-carencia { color: var(--muted); font-style: italic; }
+  .vinc-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
+  .vinc-badge.manual { background: var(--accent-bg); color: var(--accent-text); }
+  .vinc-badge.auto { background: var(--surface-3); color: var(--text-dim); }
+</style>
 </head>
 <body>
 
@@ -25,42 +65,197 @@
   </div>
 </div>
 
-<script src="../config.js?v=0.12"></script>
-<script src="../shared.js?v=0.12"></script>
-<script src="../mock-data.js?v=0.12"></script>
-<script src="../data.js?v=0.12"></script>
-<script src="contratos.js?v=0.12"></script>
+<!-- Modal vincular parcela -->
+<div class="r2a-modal-backdrop" id="modal-vinc">
+  <div class="r2a-modal" style="max-width: 760px;">
+    <div class="r2a-modal-header">
+      <h3 class="r2a-modal-title" id="modal-vinc-title">Vincular parcela</h3>
+      <button class="r2a-modal-close" id="modal-vinc-close">✕</button>
+    </div>
+    <div class="r2a-modal-body" id="modal-vinc-body"></div>
+    <div class="r2a-modal-footer">
+      <button class="btn" id="modal-vinc-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../config.js?v=0.13"></script>
+<script src="../shared.js?v=0.13"></script>
+<script src="../mock-data.js?v=0.13"></script>
+<script src="../data.js?v=0.13"></script>
+<script src="contratos.js?v=0.13"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
     R2A.renderFooter();
     R2A.data.init();
 
-    (async function () {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      if (!id) { window.location.href = 'contratos.html'; return; }
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (!id) { window.location.href = 'contratos.html'; }
 
+    const wrap = document.getElementById('cnt-wrap');
+    const modal = document.getElementById('modal-vinc');
+    const modalTitle = document.getElementById('modal-vinc-title');
+    const modalBody = document.getElementById('modal-vinc-body');
+
+    // ------------------------------------------------------------
+    // FECHA MODAL
+    // ------------------------------------------------------------
+    function fecharModal() { modal.classList.remove('open'); }
+    document.getElementById('modal-vinc-close').addEventListener('click', fecharModal);
+    document.getElementById('modal-vinc-cancel').addEventListener('click', fecharModal);
+    modal.addEventListener('click', e => { if (e.target === modal) fecharModal(); });
+
+    // ------------------------------------------------------------
+    // ABRE MODAL DE VÍNCULO MANUAL
+    // ------------------------------------------------------------
+    async function abrirModalVincular(parc, contrato) {
+      modalTitle.textContent = `Vincular parcela ${parc.n} · ${R2A.fmt.data(parc.vencimento)}`;
+      const todosLancs = await R2A.data.list(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO);
+      const valorEsperado = Math.abs(parc.valor);
+      const vencDate = new Date(parc.vencimento);
+
+      // candidatos: dentro da tolerância (preferidos no topo); + todos os outros débitos não vinculados
+      const candidatos = parc.candidatos || [];
+      const idsCandidatos = new Set(candidatos.map(c => c.id));
+      const outros = todosLancs.filter(b =>
+        b.tipo === 'D' &&
+        !b.vinculo_contrato &&
+        !idsCandidatos.has(b.id)
+      ).map(b => ({
+        ...b,
+        _diffPct: Math.abs(Math.abs(b.valor) - valorEsperado) / (valorEsperado || 1),
+        _diasDiff: Math.abs((new Date(b.data) - vencDate) / (1000 * 60 * 60 * 24))
+      })).sort((a, b) => (a._diasDiff + a._diffPct) - (b._diasDiff + b._diffPct))
+        .slice(0, 20);
+
+      function linhaCandidato(b, dentroTol) {
+        const valor = Math.abs(b.valor);
+        const diff = valor - valorEsperado;
+        const pct = (Math.abs(diff) / valorEsperado * 100).toFixed(1);
+        return `
+          <tr data-id="${b.id}">
+            <td>${R2A.fmt.data(b.data)}${b._diasDiff !== undefined && b._diasDiff > 5 ? ` <span class="diff-warn">+${Math.round(b._diasDiff)}d</span>` : ''}</td>
+            <td>${b.hist || ''}</td>
+            <td class="num">${R2A.fmt.moeda(valor, { sinal: false })}</td>
+            <td class="num">${diff >= 0 ? '+' : ''}${R2A.fmt.moeda(diff, { sinal: false })}${Math.abs(diff)/valorEsperado > 0.05 ? ` <span class="diff-warn">${pct}%</span>` : ''}</td>
+            <td class="center">${dentroTol ? '<span class="tag grn">na tolerância</span>' : '<span class="tag mut">fora tol.</span>'}</td>
+          </tr>
+        `;
+      }
+
+      modalBody.innerHTML = `
+        <div class="vinc-info">
+          <strong>Esperado:</strong> ${R2A.fmt.moeda(valorEsperado, { sinal: false })} em ${R2A.fmt.data(parc.vencimento)}.
+          Tolerância automática: data ±5 dias, valor ±5%.
+        </div>
+        ${candidatos.length > 0 ? `
+          <h4 style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase;">Candidatos dentro da tolerância (${candidatos.length})</h4>
+          <table class="ct-vinc-tbl" style="margin-bottom: 18px;">
+            <thead>
+              <tr><th>Data</th><th>Histórico</th><th class="num">Valor</th><th class="num">Diferença</th><th class="center">Status</th></tr>
+            </thead>
+            <tbody>${candidatos.map(b => linhaCandidato(b, true)).join('')}</tbody>
+          </table>
+        ` : '<p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">Nenhum candidato dentro da tolerância automática.</p>'}
+
+        ${outros.length > 0 ? `
+          <h4 style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase;">Outros débitos disponíveis (top ${outros.length})</h4>
+          <table class="ct-vinc-tbl">
+            <thead>
+              <tr><th>Data</th><th>Histórico</th><th class="num">Valor</th><th class="num">Diferença</th><th class="center">Status</th></tr>
+            </thead>
+            <tbody>${outros.map(b => linhaCandidato(b, false)).join('')}</tbody>
+          </table>
+        ` : ''}
+      `;
+
+      // Click handler em qualquer linha → confirma e vincula
+      modalBody.querySelectorAll('tr[data-id]').forEach(tr => {
+        tr.addEventListener('click', async () => {
+          const lancId = tr.dataset.id;
+          const ok = await R2A.confirm(`Vincular este lançamento à parcela ${parc.n}?`);
+          if (!ok) return;
+          try {
+            await R2A.contratos.vincularParcela(contrato.id, parc.n, lancId);
+            fecharModal();
+            R2A.toast(`Parcela ${parc.n} vinculada`, 'success');
+            await render();
+          } catch (e) {
+            console.error(e);
+            R2A.toast('Erro ao vincular: ' + (e.message || 'desconhecido'), 'error');
+          }
+        });
+      });
+
+      modal.classList.add('open');
+    }
+
+    // ------------------------------------------------------------
+    // DESVINCULAR
+    // ------------------------------------------------------------
+    async function desvincular(lancId, parcelaN) {
+      const ok = await R2A.confirm(`Desvincular a parcela ${parcelaN}?`);
+      if (!ok) return;
+      try {
+        await R2A.contratos.desvincularParcela(lancId);
+        R2A.toast(`Parcela ${parcelaN} desvinculada`, 'success');
+        await render();
+      } catch (e) {
+        console.error(e);
+        R2A.toast('Erro ao desvincular: ' + (e.message || 'desconhecido'), 'error');
+      }
+    }
+
+    // ------------------------------------------------------------
+    // AUTO-VINCULAR
+    // ------------------------------------------------------------
+    async function autoVincular() {
+      const ok = await R2A.confirm('Vincular automaticamente todas as parcelas com candidato único dentro da tolerância (data ±5d, valor ±5%)?');
+      if (!ok) return;
+      try {
+        const r = await R2A.contratos.autoVincular(id);
+        R2A.toast(`${r.vinculados} vinculada(s) automaticamente${r.ambiguos ? ` · ${r.ambiguos} ambíguo(s) precisam de revisão manual` : ''}`, 'success', 5000);
+        await render();
+      } catch (e) {
+        console.error(e);
+        R2A.toast('Erro no auto-vincular: ' + (e.message || 'desconhecido'), 'error');
+      }
+    }
+
+    // expor handlers no window pra usar em onclick inline
+    window._ctrAcoes = { vincular: null, desvincular };
+
+    // ------------------------------------------------------------
+    // RENDER
+    // ------------------------------------------------------------
+    async function render() {
       const c = await R2A.contratos.get(id);
-      const wrap = document.getElementById('cnt-wrap');
       if (!c) {
         wrap.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div><p>Contrato não encontrado</p><a href="contratos.html" class="btn">Voltar à lista</a></div>`;
         return;
       }
+      const lancamentos = await R2A.data.list(R2A_CONFIG.COLLECTIONS.LANCAMENTOS_BANCO);
+      const parcelas = R2A.contratos.matchParcelas(c, lancamentos);
+
+      // bind do vincular pra cada parcela
+      window._ctrAcoes.vincular = (n) => {
+        const parc = parcelas.find(p => p.n === n);
+        if (parc) abrirModalVincular(parc, c);
+      };
 
       const banco = `${c.banco}${c.banco_codigo_bacen ? ` · ${c.banco_codigo_bacen}` : ''}`;
       const taxa = R2A.contratos.fmtTaxa(c.taxa_juros);
       const sistema = R2A.contratos.fmtSistema(c.estrutura.sistema_amortizacao_detectado);
       const cet = c.taxa_juros.cet_aa ? (c.taxa_juros.cet_aa * 100).toFixed(4) + '% a.a.' : '—';
 
-      // simulação de match (vai usar lancamentos reais na Fase 4)
-      const lancamentos = (window.R2A_MOCK && window.R2A_MOCK.BANCO) || [];
-      const parcelas = R2A.contratos.matchParcelas(c, lancamentos);
       const pagas = parcelas.filter(p => p.status === 'pago' || p.status === 'pago_maior' || p.status === 'pago_menor').length;
       const totalAmort = parcelas.filter(p => p.tipo !== 'carencia' && p.valor > 0).length;
       const valorPrev = parcelas.reduce((s, p) => s + (p.valor || 0), 0);
       const valorPago = parcelas.reduce((s, p) => s + (p.pago ? p.pago.valor : 0), 0);
       const pctCumprimento = totalAmort > 0 ? Math.round((pagas / totalAmort) * 100) : 0;
+      const atrasos = parcelas.filter(p => p.status === 'atraso').length;
 
       const garantiasHtml = (c.garantias || []).map(g => {
         const tagClass = g.tipo === 'aval' ? 'tag mut' : g.tipo === 'cessao_fiduciaria' ? 'tag hl' : g.tipo === 'fundo_garantidor' ? 'tag grn' : 'tag acc';
@@ -94,16 +289,11 @@
             <a href="contratos.html" class="btn btn-ghost">← Voltar</a>
             ${(function () {
               const p = c.pdf_original;
-              if (!p) {
-                return '<button class="btn" disabled title="Nenhum PDF anexado">⤓ Sem PDF</button>';
-              }
+              if (!p) return '<button class="btn" disabled title="Nenhum PDF anexado">⤓ Sem PDF</button>';
               const tamanho = p.tamanho_kb ? ` · ${(p.tamanho_kb / 1024).toFixed(1)} MB` : '';
-              if (p.url) {
-                return `<a href="${p.url}" download="${p.nome}" class="btn btn-primary" title="${p.nome}${tamanho}">⤓ Baixar PDF</a>`;
-              }
-              return `<button class="btn" disabled title="Arquivo: ${p.nome}${tamanho} · ainda não anexado (mock)">⤓ ${p.nome}</button>`;
+              if (p.url) return `<a href="${p.url}" download="${p.nome}" class="btn btn-primary" title="${p.nome}${tamanho}">⤓ Baixar PDF</a>`;
+              return `<button class="btn" disabled title="Arquivo: ${p.nome}${tamanho} · ainda não anexado (Fase 5)">⤓ ${p.nome}</button>`;
             })()}
-            <button class="btn" disabled title="Disponível na Fase 5">Reimportar PDF</button>
           </div>
         </div>
 
@@ -119,10 +309,10 @@
             <div class="value">${c.valores.liquido_liberado ? R2A.fmt.moeda(c.valores.liquido_liberado, { sinal: false }) : '—'}</div>
             <div class="sub">${c.valores.iof ? 'IOF ' + R2A.fmt.moeda(c.valores.iof, { sinal: false }) : ''} ${c.valores.tarifas ? ' · Tarifas ' + R2A.fmt.moeda(c.valores.tarifas, { sinal: false }) : ''}</div>
           </div>
-          <div class="kpi hl">
-            <div class="label">Cumprimento (mock)</div>
+          <div class="kpi ${atrasos > 0 ? 'dn' : 'hl'}">
+            <div class="label">Cumprimento</div>
             <div class="value">${pctCumprimento}<span class="unit">%</span></div>
-            <div class="sub">${pagas} de ${totalAmort} parcelas vinculadas</div>
+            <div class="sub">${pagas} de ${totalAmort} parcelas vinculadas${atrasos > 0 ? ` · ${atrasos} em atraso` : ''}</div>
           </div>
           <div class="kpi">
             <div class="label">Pago vs previsto</div>
@@ -132,7 +322,6 @@
         </div>
 
         <div class="ct-detail-grid">
-          <!-- Esquerda: cronograma -->
           <div>
             <div class="ct-panel">
               <div class="ct-panel-head">
@@ -140,7 +329,10 @@
                   <h3>Cronograma de parcelas</h3>
                   <div class="sub">${c.qualidade_extracao && c.qualidade_extracao.cronograma_extraido ? 'extraído do anexo de parcelas' : 'simulado'} · ${c.cronograma_parcelas.length} parcelas</div>
                 </div>
-                <div>${flagsHtml}</div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  ${flagsHtml}
+                  <button class="btn btn-primary btn-sm" id="btn-auto-vinc">⟳ Auto-vincular</button>
+                </div>
               </div>
               <div class="ct-panel-body flush">
                 <div class="ct-cronograma">
@@ -153,6 +345,7 @@
                         <th class="num">Pago</th>
                         <th class="num">Diferença</th>
                         <th class="center">Status</th>
+                        <th class="center">Ação</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -166,14 +359,24 @@
                           'aberta': 'aberta',
                           'carencia': 'carência'
                         }[p.status] || p.status;
+                        const badge = p.pago
+                          ? (p.pago.vinculoManual
+                              ? '<span class="vinc-badge manual" title="vinculo manual">M</span>'
+                              : '<span class="vinc-badge auto" title="match automático sugerido">~</span>')
+                          : '';
+                        const acoes = p.tipo === 'carencia' ? '—'
+                          : p.pago && p.pago.vinculoManual
+                            ? `<button class="btn btn-ghost btn-sm" onclick="window._ctrAcoes.desvincular('${p.pago.ref}', ${p.n})">desvincular</button>`
+                          : `<button class="btn btn-sm" onclick="window._ctrAcoes.vincular(${p.n})">${p.pago ? 'confirmar' : 'vincular'}</button>`;
                         return `
                           <tr class="${rowClass}">
                             <td class="center">${p.n}</td>
                             <td>${R2A.fmt.data(p.vencimento)}</td>
                             <td class="num">${p.valor > 0 ? R2A.fmt.moeda(p.valor, { sinal: false }) : '—'}</td>
-                            <td class="num">${p.pago ? R2A.fmt.moeda(p.pago.valor, { sinal: false }) : '—'}</td>
+                            <td class="num">${p.pago ? R2A.fmt.moeda(p.pago.valor, { sinal: false }) + badge : '—'}</td>
                             <td class="num">${p.pago && p.pago.diferenca ? (p.pago.diferenca > 0 ? '+' : '') + R2A.fmt.moeda(p.pago.diferenca, { sinal: false }) : '—'}</td>
-                            <td class="center"><span class="ct-parcela-status">${statusLabel}</span></td>
+                            <td class="center"><span class="ct-parcela-status status-${p.status}">${statusLabel}</span></td>
+                            <td class="center"><div class="parcela-acoes">${acoes}</div></td>
                           </tr>
                         `;
                       }).join('')}
@@ -184,7 +387,6 @@
             </div>
           </div>
 
-          <!-- Direita: dados do contrato -->
           <div>
             <div class="ct-panel">
               <div class="ct-panel-head"><div><h3>Tomador e garantias</h3></div></div>
@@ -193,13 +395,13 @@
                   <div class="ct-info" style="grid-column: span 3;">
                     <span class="ct-info-label">Razão social</span>
                     <span class="ct-info-value">${c.tomador.razao_social}</span>
-                    <span class="ct-info-sub">${c.tomador.cnpj}</span>
+                    <span class="ct-info-sub">${c.tomador.cnpj || ''}</span>
                   </div>
                   ${(c.avalistas || []).map(a => `
                     <div class="ct-info" style="grid-column: span 3;">
                       <span class="ct-info-label">Avalista</span>
                       <span class="ct-info-value">${a.nome}</span>
-                      <span class="ct-info-sub">${a.cpf_cnpj}</span>
+                      <span class="ct-info-sub">${a.cpf_cnpj || ''}</span>
                     </div>
                   `).join('')}
                 </div>
@@ -267,9 +469,12 @@
             ` : ''}
           </div>
         </div>
-
       `;
-    })();
+
+      document.getElementById('btn-auto-vinc').addEventListener('click', autoVincular);
+    }
+
+    render();
   }
 </script>
 

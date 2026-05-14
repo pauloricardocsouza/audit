@@ -316,4 +316,71 @@
   R2A.$ = (s, r = document) => r.querySelector(s);
   R2A.$$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
+  // ----------------------------------------------------------
+  // AMORTIZAÇÃO · Price e SAC determinísticos
+  // taxa em decimal mensal (0.01 = 1% a.m.), prazo e carência em meses
+  // dataInicio: data ISO da primeira parcela
+  // ----------------------------------------------------------
+  R2A.amortizacao = {
+    price(principal, taxaMensal, prazo, carencia = 0) {
+      const out = [];
+      let saldo = principal;
+      for (let i = 1; i <= carencia; i++) {
+        const juros = saldo * taxaMensal;
+        out.push({ n: i, juros, amort: 0, parcela: juros, saldo, tipo: 'carencia' });
+      }
+      const n = prazo - carencia;
+      const pmt = saldo * (taxaMensal * Math.pow(1 + taxaMensal, n)) / (Math.pow(1 + taxaMensal, n) - 1);
+      for (let i = 1; i <= n; i++) {
+        const juros = saldo * taxaMensal;
+        const amort = pmt - juros;
+        saldo -= amort;
+        out.push({ n: carencia + i, juros, amort, parcela: pmt, saldo: Math.max(0, saldo), tipo: 'amortizacao' });
+      }
+      return out;
+    },
+
+    sac(principal, taxaMensal, prazo, carencia = 0) {
+      const out = [];
+      let saldo = principal;
+      for (let i = 1; i <= carencia; i++) {
+        const juros = saldo * taxaMensal;
+        out.push({ n: i, juros, amort: 0, parcela: juros, saldo, tipo: 'carencia' });
+      }
+      const n = prazo - carencia;
+      const amort = saldo / n;
+      for (let i = 1; i <= n; i++) {
+        const juros = saldo * taxaMensal;
+        const parcela = juros + amort;
+        saldo -= amort;
+        out.push({ n: carencia + i, juros, amort, parcela, saldo: Math.max(0, saldo), tipo: 'amortizacao' });
+      }
+      return out;
+    },
+
+    // Adiciona meses preservando dia (fallback para último dia do mês)
+    addMeses(iso, n) {
+      const d = new Date(iso);
+      const diaOriginal = d.getDate();
+      d.setDate(1);
+      d.setMonth(d.getMonth() + n);
+      const ultimoDia = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      d.setDate(Math.min(diaOriginal, ultimoDia));
+      return d.toISOString().slice(0, 10);
+    },
+
+    // Gera cronograma com datas, formato compatível com cronograma_parcelas do schema
+    gerarCronograma({ sistema = 'price', principal, taxaMensal, prazo, carencia = 0, dataInicio }) {
+      const fn = sistema === 'sac' ? this.sac : this.price;
+      const linhas = fn.call(this, principal, taxaMensal, prazo, carencia);
+      const offsetInicial = carencia; // 1ª parcela de amortização cai em data + carencia
+      return linhas.map((l, idx) => ({
+        n: l.n,
+        vencimento: this.addMeses(dataInicio, l.n - 1 - offsetInicial < 0 ? 0 : l.n - 1 - offsetInicial),
+        valor: l.parcela,
+        tipo: l.tipo
+      }));
+    }
+  };
+
 })();

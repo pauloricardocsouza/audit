@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Simulador · R2 Audit</title>
-<link rel="stylesheet" href="../shared.css?v=0.12">
-<link rel="stylesheet" href="contratos.css?v=0.12">
+<link rel="stylesheet" href="../shared.css?v=0.13">
+<link rel="stylesheet" href="contratos.css?v=0.13">
 </head>
 <body>
 
@@ -97,61 +97,18 @@
   </div>
 </div>
 
-<script src="../config.js?v=0.12"></script>
-<script src="../shared.js?v=0.12"></script>
-<script src="../mock-data.js?v=0.12"></script>
-<script src="../data.js?v=0.12"></script>
-<script src="contratos.js?v=0.12"></script>
+<script src="../config.js?v=0.13"></script>
+<script src="../shared.js?v=0.13"></script>
+<script src="../mock-data.js?v=0.13"></script>
+<script src="../data.js?v=0.13"></script>
+<script src="contratos.js?v=0.13"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'simulador' });
     R2A.renderFooter();
     R2A.data.init();
 
-    // Fase 1: calculador inline simples (Fase 3 promove para R2A.amortizacao)
-    function simularPrice(principal, taxa, prazo, carencia) {
-      const out = [];
-      let saldo = principal;
-      // carência: só juros
-      for (let i = 1; i <= carencia; i++) {
-        const juros = saldo * taxa;
-        out.push({ n: i, juros, amort: 0, parcela: juros, saldo });
-      }
-      const n = prazo - carencia;
-      const pmt = saldo * (taxa * Math.pow(1 + taxa, n)) / (Math.pow(1 + taxa, n) - 1);
-      for (let i = 1; i <= n; i++) {
-        const juros = saldo * taxa;
-        const amort = pmt - juros;
-        saldo -= amort;
-        out.push({ n: carencia + i, juros, amort, parcela: pmt, saldo: Math.max(0, saldo) });
-      }
-      return out;
-    }
-
-    function simularSAC(principal, taxa, prazo, carencia) {
-      const out = [];
-      let saldo = principal;
-      for (let i = 1; i <= carencia; i++) {
-        const juros = saldo * taxa;
-        out.push({ n: i, juros, amort: 0, parcela: juros, saldo });
-      }
-      const n = prazo - carencia;
-      const amort = saldo / n;
-      for (let i = 1; i <= n; i++) {
-        const juros = saldo * taxa;
-        const parcela = juros + amort;
-        saldo -= amort;
-        out.push({ n: carencia + i, juros, amort, parcela, saldo: Math.max(0, saldo) });
-      }
-      return out;
-    }
-
-    function addMeses(isoDate, n) {
-      const d = new Date(isoDate);
-      d.setMonth(d.getMonth() + n);
-      return d.toISOString().slice(0, 10);
-    }
-
+    // Fase 3: calcula via R2A.amortizacao (utilitário global em shared.js)
     function simular() {
       const principal = parseFloat(document.getElementById('s-principal').value) || 0;
       const prazo = parseInt(document.getElementById('s-prazo').value) || 0;
@@ -165,9 +122,8 @@
         return;
       }
 
-      const cronograma = sistema === 'sac'
-        ? simularSAC(principal, taxa, prazo, carencia)
-        : simularPrice(principal, taxa, prazo, carencia);
+      const fn = sistema === 'sac' ? R2A.amortizacao.sac : R2A.amortizacao.price;
+      const cronograma = fn.call(R2A.amortizacao, principal, taxa, prazo, carencia);
 
       const totalJuros = cronograma.reduce((s, p) => s + p.juros, 0);
       const totalParc = cronograma.reduce((s, p) => s + p.parcela, 0);
@@ -178,7 +134,7 @@
       tbody.innerHTML = cronograma.map((p, idx) => `
         <tr class="${p.amort === 0 ? 'carencia' : ''}">
           <td class="center">${p.n}</td>
-          <td>${R2A.fmt.data(addMeses(dataIni, idx))}</td>
+          <td>${R2A.fmt.data(R2A.amortizacao.addMeses(dataIni, idx))}</td>
           <td class="num">${R2A.fmt.moeda(p.juros, { sinal: false })}</td>
           <td class="num">${p.amort > 0 ? R2A.fmt.moeda(p.amort, { sinal: false }) : '—'}</td>
           <td class="num">${R2A.fmt.moeda(p.parcela, { sinal: false })}</td>

@@ -6,10 +6,11 @@
 window.R2A_MOCK = {
 
   CONTAS: [
-    { id: 'bb-001',       banco: 'Banco do Brasil', agencia: '0001-2', numero: '12345-6', apelido: 'BB · Movimento',       tipo: 'corrente' },
-    { id: 'bb-001-g',     banco: 'Banco do Brasil', agencia: '0001-2', numero: '12345-6/G', apelido: 'BB · Garantida',      tipo: 'garantida' },
-    { id: 'itau-001',     banco: 'Itaú',            agencia: '4520',   numero: '98765-4', apelido: 'Itaú · Operacional',    tipo: 'corrente' },
-    { id: 'bradesco-001', banco: 'Bradesco',        agencia: '1234',   numero: '55555-5', apelido: 'Bradesco · Folha',      tipo: 'corrente' }
+    { id: 'bb-001',       banco: 'Banco do Brasil', agencia: '0001-2', numero: '12345-6',   apelido: 'BB · Movimento',          tipo: 'corrente' },
+    { id: 'bb-001-g',     banco: 'Banco do Brasil', agencia: '0001-2', numero: '12345-6/G', apelido: 'BB · Garantida',          tipo: 'garantida' },
+    { id: 'itau-001',     banco: 'Itaú',            agencia: '4520',   numero: '98765-4',   apelido: 'Itaú · Operacional',      tipo: 'corrente' },
+    { id: 'bradesco-001', banco: 'Bradesco',        agencia: '1234',   numero: '55555-5',   apelido: 'Bradesco · Folha',        tipo: 'corrente' },
+    { id: 'sofisa-001',   banco: 'Banco Sofisa',    agencia: '00132',  numero: '000000915-5', apelido: 'Sofisa · Capital Giro', tipo: 'corrente' }
   ],
 
   CATEGORIAS: [
@@ -34,7 +35,16 @@ window.R2A_MOCK = {
     { id: 'b9',  conta: 'bradesco-001', data: '2026-05-12', hist: 'Tarifa · TED',                        valor: -8.50,    tipo: 'D', status: 'pendente' },
     { id: 'b10', conta: 'bb-001',       data: '2026-05-13', hist: 'IOF · Operação 4423',                 valor: -42.30,   tipo: 'D', status: 'pendente' },
     { id: 'b11', conta: 'bb-001',       data: '2026-05-15', hist: 'PIX Enviado · ALUGUEL MAI',           valor: -6500.00, tipo: 'D', status: 'pendente' },
-    { id: 'b12', conta: 'itau-001',     data: '2026-05-16', hist: 'TED Recebida · CLIENTE PJ',           valor: 8900.00,  tipo: 'C', status: 'pendente' }
+    { id: 'b12', conta: 'itau-001',     data: '2026-05-16', hist: 'TED Recebida · CLIENTE PJ',           valor: 8900.00,  tipo: 'C', status: 'pendente' },
+
+    // Lançamentos casáveis com as primeiras parcelas do contrato Sofisa PII56430-6 (cnt-001)
+    { id: 'b-cnt1-p1', conta: 'sofisa-001', data: '2025-12-26', hist: 'Débito automático · CCB Sofisa PII56430-6 parcela 01', valor: -88446.73, tipo: 'D', status: 'pendente' },
+    { id: 'b-cnt1-p2', conta: 'sofisa-001', data: '2026-01-26', hist: 'Débito automático · CCB Sofisa PII56430-6 parcela 02', valor: -89057.02, tipo: 'D', status: 'pendente' },
+    { id: 'b-cnt1-p3', conta: 'sofisa-001', data: '2026-02-26', hist: 'Débito automático · CCB Sofisa PII56430-6 parcela 03', valor: -89671.51, tipo: 'D', status: 'pendente' },
+    // Parcela 04: pago em data próxima (D-1) e valor levemente diferente (para mostrar status 'pago' aprox)
+    { id: 'b-cnt1-p4', conta: 'sofisa-001', data: '2026-03-25', hist: 'Débito automático · CCB Sofisa PII56430-6 parcela 04', valor: -90290.21, tipo: 'D', status: 'pendente' },
+    // Parcela 05: pago a menor (para mostrar status 'pago_menor')
+    { id: 'b-cnt1-p5', conta: 'sofisa-001', data: '2026-04-26', hist: 'Débito automático · CCB Sofisa PII56430-6 parcela 05',  valor: -89500.00, tipo: 'D', status: 'pendente' }
   ],
 
   SIA: [

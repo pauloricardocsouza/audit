@@ -170,36 +170,17 @@ if (!R2A.requireAuth()) {
       return;
     }
 
-    const linhas = [];
-    let saldo = principal;
-    let dia = 1;
-
-    // Carência (juros zerado no cronograma, simplificação)
-    for (let i = 0; i < carencia; i++) {
-      const d = addMeses(dataIni, i);
-      linhas.push(`${d};0;carencia`);
-    }
-
-    const n = prazo - carencia;
-    const pmt = saldo * (taxa * Math.pow(1 + taxa, n)) / (Math.pow(1 + taxa, n) - 1);
-
-    for (let i = 0; i < n; i++) {
-      const d = addMeses(dataIni, carencia + i);
-      const juros = saldo * taxa;
-      const amort = pmt - juros;
-      saldo -= amort;
-      linhas.push(`${d};${pmt.toFixed(2)};amortizacao`);
-    }
+    // Usa R2A.amortizacao (Fase 3)
+    const cronograma = R2A.amortizacao.gerarCronograma({
+      sistema: 'price', principal, taxaMensal: taxa, prazo, carencia, dataInicio: dataIni
+    });
+    const linhas = cronograma.map(p =>
+      `${p.vencimento};${p.tipo === 'carencia' ? '0' : p.valor.toFixed(2)};${p.tipo}`
+    );
 
     document.getElementById('f-cronograma').value = linhas.join('\n');
     R2A.toast('Cronograma Price gerado · revise antes de salvar', 'success');
   });
-
-  function addMeses(iso, n) {
-    const d = new Date(iso);
-    d.setMonth(d.getMonth() + n);
-    return d.toISOString().slice(0, 10);
-  }
 
   // ----------------------------------------------------------
   // SALVAR CONTRATO
