@@ -3,239 +3,100 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>R2 Audit · Dashboard</title>
-<link rel="stylesheet" href="shared.css?v=0.13">
-<style>
-  .dash-geral { padding: 24px; flex: 1; overflow-y: auto; }
-
-  .dash-greet {
-    margin-bottom: 24px;
-  }
-  .dash-greet h1 {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.01em;
-    margin-bottom: 4px;
-  }
-  .dash-greet p {
-    font-size: 13px;
-    color: var(--text-2);
-  }
-
-  .dash-section {
-    margin-bottom: 28px;
-  }
-  .dash-section-title {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    font-weight: 700;
-    margin-bottom: 12px;
-  }
-
-  .modulos-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 14px;
-  }
-
-  .modulo-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 18px 20px;
-    text-decoration: none;
-    color: var(--text);
-    transition: all 0.15s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    box-shadow: var(--shadow-sm);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .modulo-card:hover {
-    border-color: var(--primary);
-    box-shadow: var(--shadow);
-    transform: translateY(-2px);
-  }
-
-  .modulo-card.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-
-  .modulo-card-head {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .modulo-card-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--gray-grad-dark), var(--gray-grad-light));
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .modulo-card-name {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-  }
-
-  .modulo-card-desc {
-    font-size: 12px;
-    color: var(--text-2);
-    line-height: 1.5;
-  }
-
-  .modulo-card-foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 6px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-  }
-
-  .modulo-card-items {
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .modulo-card-cta {
-    font-size: 12px;
-    color: var(--primary);
-    font-weight: 600;
-  }
-
-  .modulo-card.coming {
-    border-style: dashed;
-    background: var(--surface-2);
-  }
-
-  .modulo-card.coming .modulo-card-icon {
-    background: var(--neutral-bg);
-    color: var(--muted);
-  }
-
-  .kpi-strip {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-
-  .kpi-mini {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 14px 16px;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .kpi-mini-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--muted);
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-
-  .kpi-mini-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.02em;
-  }
-
-  .kpi-mini-value.success { color: var(--success); }
-  .kpi-mini-value.warning { color: var(--warning); }
-
-  .kpi-mini-sub {
-    font-size: 11px;
-    color: var(--text-2);
-    margin-top: 2px;
-  }
-
-  @media (max-width: 640px) {
-    .dash-geral { padding: 16px; }
-    .kpi-strip { grid-template-columns: repeat(2, 1fr); }
-  }
-</style>
+<title>R2 Audit · Dashboard geral</title>
+<link rel="stylesheet" href="styles/theme.css?v=0.14">
+<link rel="stylesheet" href="shared.css?v=0.14">
 </head>
 <body>
 
-<div class="r2a-shell">
+<div class="r2a-shell r2-app">
 
-  <aside class="r2a-sidebar"></aside>
+  <aside class="r2a-sidebar r2-side"></aside>
 
-  <div class="r2a-main">
-    <header class="r2a-topbar"></header>
+  <div class="r2a-main r2-main">
+    <header class="r2a-topbar r2-top"></header>
 
-    <div class="r2a-content">
-      <section class="dash-geral">
+    <div class="r2a-content r2-content">
 
-        <div class="dash-greet">
-          <h1 id="greet-title">Olá!</h1>
-          <p id="greet-sub">Bem-vindo ao R2 Audit. Selecione um módulo para começar.</p>
+      <!-- HERO -->
+      <section class="r2-hero">
+        <div class="r2-hero__left">
+          <div class="r2-hero__kicker" id="hero-kicker">—</div>
+          <h1 id="hero-title">Olá!</h1>
+          <p id="hero-sub">Você tem 0 lançamentos aguardando conciliação.</p>
         </div>
-
-        <!-- KPIs gerais do sistema (consolidação rápida) -->
-        <div class="kpi-strip">
-          <div class="kpi-mini">
-            <div class="kpi-mini-label">Lançamentos pendentes</div>
-            <div class="kpi-mini-value warning" id="kpi-pendentes">—</div>
-            <div class="kpi-mini-sub">aguardando conciliação</div>
-          </div>
-          <div class="kpi-mini">
-            <div class="kpi-mini-label">Contas cadastradas</div>
-            <div class="kpi-mini-value" id="kpi-contas">—</div>
-            <div class="kpi-mini-sub">contas bancárias ativas</div>
-          </div>
-          <div class="kpi-mini">
-            <div class="kpi-mini-label">Taxa de conciliação</div>
-            <div class="kpi-mini-value success" id="kpi-taxa">—</div>
-            <div class="kpi-mini-sub">no mês corrente</div>
-          </div>
-          <div class="kpi-mini">
-            <div class="kpi-mini-label">Última atividade</div>
-            <div class="kpi-mini-value" id="kpi-atividade" style="font-size: 14px;">—</div>
-            <div class="kpi-mini-sub" id="kpi-atividade-sub">há instantes</div>
-          </div>
+        <div class="r2-hero__actions">
+          <a href="conciliador/processamento.html" class="r2-btn r2-btn--hero-ghost">↥ Importar extrato</a>
+          <a href="conciliador/conciliacao.html" class="r2-btn r2-btn--hero">Abrir conciliação →</a>
         </div>
-
-        <!-- MÓDULOS -->
-        <div class="dash-section">
-          <div class="dash-section-title">Módulos disponíveis</div>
-          <div class="modulos-grid" id="modulos-grid"></div>
-        </div>
-
       </section>
+
+      <!-- KPIs -->
+      <div class="r2-grid r2-grid-4" style="margin-bottom: 18px;">
+        <div class="r2-kpi">
+          <div class="r2-kpi__head">
+            <span class="r2-kpi__label">Pendentes</span>
+            <span class="r2-kpi__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span>
+          </div>
+          <div class="r2-kpi__row">
+            <span class="r2-kpi__value" id="kpi-pendentes">—</span>
+            <span class="r2-kpi__delta r2-kpi__delta--down" id="kpi-pendentes-delta"></span>
+          </div>
+          <div class="r2-kpi__sub">aguardando ação</div>
+        </div>
+
+        <div class="r2-kpi">
+          <div class="r2-kpi__head">
+            <span class="r2-kpi__label">Contas ativas</span>
+            <span class="r2-kpi__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><line x1="2" y1="11" x2="22" y2="11"/></svg></span>
+          </div>
+          <div class="r2-kpi__row">
+            <span class="r2-kpi__value" id="kpi-contas">—</span>
+          </div>
+          <div class="r2-kpi__sub">contas bancárias</div>
+        </div>
+
+        <div class="r2-kpi">
+          <div class="r2-kpi__head">
+            <span class="r2-kpi__label">Taxa de conciliação</span>
+            <span class="r2-kpi__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+          </div>
+          <div class="r2-kpi__row">
+            <span class="r2-kpi__value" id="kpi-taxa">—</span>
+            <span class="r2-kpi__delta r2-kpi__delta--up" id="kpi-taxa-delta"></span>
+          </div>
+          <div class="r2-kpi__sub">no mês corrente</div>
+        </div>
+
+        <div class="r2-kpi">
+          <div class="r2-kpi__head">
+            <span class="r2-kpi__label">Última atividade</span>
+            <span class="r2-kpi__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15 8.5 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 9 8.5 12 2"/></svg></span>
+          </div>
+          <div class="r2-kpi__row">
+            <span class="r2-kpi__value" id="kpi-atividade" style="font-size: 22px;">—</span>
+          </div>
+          <div class="r2-kpi__sub" id="kpi-atividade-sub">há instantes</div>
+        </div>
+      </div>
+
+      <!-- MÓDULOS -->
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px;">
+        <h2 style="font-size: 14px;">Módulos disponíveis</h2>
+      </div>
+
+      <div class="r2-grid r2-grid-3" id="modulos-grid"></div>
+
     </div>
 
-    <footer class="r2a-footer"></footer>
+    <footer class="r2a-footer r2-footer"></footer>
   </div>
-
 </div>
 
-<script src="config.js?v=0.13"></script>
-<script src="shared.js?v=0.13"></script>
-<script src="mock-data.js?v=0.13"></script>
-<script src="data.js?v=0.13"></script>
+<script src="config.js?v=0.14"></script>
+<script src="shared.js?v=0.14"></script>
+<script src="mock-data.js?v=0.14"></script>
+<script src="data.js?v=0.14"></script>
 <script>
   if (!R2A.requireAuth()) { /* já redirecionou */ }
   else {
@@ -243,73 +104,87 @@
     R2A.renderFooter();
     R2A.data.init();
 
-    // Saudação personalizada
+    // Hero saudação por horário
     (function () {
       const u = R2A.session.user();
       const hr = new Date().getHours();
       const cumprimento = hr < 12 ? 'Bom dia' : hr < 18 ? 'Boa tarde' : 'Boa noite';
-      document.getElementById('greet-title').textContent = `${cumprimento}, ${u.nome.split(' ')[0]}!`;
+      const meses = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+      const dias  = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
+      const d = new Date();
+      document.getElementById('hero-kicker').textContent = `${dias[d.getDay()]}-FEIRA · ${String(d.getDate()).padStart(2,'0')} DE ${meses[d.getMonth()]}`;
+      document.getElementById('hero-title').textContent = `${cumprimento}, ${u.nome.split(' ')[0]}`;
     })();
 
-    // Renderiza módulos
+    // KPIs + Hero stat
+    (async function () {
+      const contas = await R2A.data.list(R2A_CONFIG.COLLECTIONS.CONTAS);
+      const contasAtivas = contas.filter(c => c.ativo !== false);
+      document.getElementById('kpi-contas').textContent = contasAtivas.length;
+
+      const pendentes = (R2A_MOCK.BANCO || []).filter(b => b.status === 'pendente').length;
+      document.getElementById('kpi-pendentes').textContent = pendentes;
+      document.getElementById('kpi-pendentes-delta').textContent = '↓ 2';
+      document.getElementById('hero-sub').textContent = `Você tem ${pendentes} lançamento${pendentes === 1 ? '' : 's'} aguardando conciliação. Bora dar uma olhada?`;
+
+      const ultimo = R2A_MOCK.HISTORICO_MENSAL[R2A_MOCK.HISTORICO_MENSAL.length - 1];
+      const taxa = ultimo ? Math.round(ultimo.conciliados_qtd / (ultimo.conciliados_qtd + ultimo.pendentes_qtd) * 100) : 0;
+      document.getElementById('kpi-taxa').innerHTML = `${taxa}<span class="unit">%</span>`;
+      document.getElementById('kpi-taxa-delta').textContent = '↑ 6pp';
+
+      document.getElementById('kpi-atividade').textContent = 'agora';
+      document.getElementById('kpi-atividade-sub').textContent = 'conciliação · há instantes';
+    })();
+
+    // Cards de módulos
     (function () {
       const grid = document.getElementById('modulos-grid');
-      const cards = R2A_CONFIG.MODULOS.map(m => {
+      const icones = {
+        conciliador: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a2 2 0 0 1 2-2h16"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a2 2 0 0 1-2 2H3"/></svg>',
+        contratos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg>'
+      };
+      const html = R2A_CONFIG.MODULOS.map(m => {
         const firstItem = m.itens[0];
         const href = m.ativo === false ? '#' : firstItem.href;
+        const icon = icones[m.id] || icones.contratos;
         return `
-          <a href="${href}" class="modulo-card ${m.ativo === false ? 'disabled' : ''}">
-            <div class="modulo-card-head">
-              <div class="modulo-card-icon">${m.icon}</div>
-              <div>
-                <div class="modulo-card-name">${m.label}</div>
+          <a href="${href}" class="r2-card" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;${m.ativo === false ? 'opacity:0.6;pointer-events:none;' : ''}">
+            <div style="padding:18px 20px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+              <div style="width:42px;height:42px;background:var(--navy-soft);color:var(--navy);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;">
+                ${icon}
               </div>
+              <span class="r2-pill r2-pill--ok"><span class="dot"></span>ATIVO</span>
             </div>
-            <div class="modulo-card-desc">${m.desc}</div>
-            <div class="modulo-card-foot">
-              <span class="modulo-card-items">${m.itens.length} telas</span>
-              <span class="modulo-card-cta">Abrir →</span>
+            <div style="padding:0 20px 14px;flex:1;">
+              <h3 style="font-size:15px;margin-bottom:6px;">${m.label}</h3>
+              <p style="font-size:12.5px;color:var(--ink-3);line-height:1.5;">${m.desc}</p>
+            </div>
+            <div style="padding:12px 20px;border-top:1px solid var(--line-2);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11.5px;color:var(--ink-4);">${m.itens.length} telas</span>
+              <span style="font-size:12.5px;color:var(--navy);font-weight:600;">Abrir módulo →</span>
             </div>
           </a>
         `;
       }).join('');
 
       // Card "em breve"
-      const comingCard = `
-        <div class="modulo-card coming">
-          <div class="modulo-card-head">
-            <div class="modulo-card-icon">+</div>
-            <div>
-              <div class="modulo-card-name">Novos módulos</div>
-            </div>
+      const coming = `
+        <div class="r2-card" style="display:flex;flex-direction:column;background:var(--navy-tint);border-style:dashed;">
+          <div style="padding:18px 20px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div style="width:42px;height:42px;background:var(--line-2);color:var(--ink-4);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:300;">+</div>
+            <span class="r2-pill r2-pill--mute"><span class="dot"></span>EM BREVE</span>
           </div>
-          <div class="modulo-card-desc">Próximos módulos de auditoria serão adicionados aqui em breve.</div>
-          <div class="modulo-card-foot">
-            <span class="modulo-card-items">em planejamento</span>
-            <span class="modulo-card-cta" style="color: var(--muted);">—</span>
+          <div style="padding:0 20px 14px;flex:1;">
+            <h3 style="font-size:15px;margin-bottom:6px;color:var(--ink-3);">Novos módulos</h3>
+            <p style="font-size:12.5px;color:var(--ink-4);line-height:1.5;">Próximos módulos de auditoria serão adicionados aqui em breve.</p>
+          </div>
+          <div style="padding:12px 20px;border-top:1px solid var(--line-2);">
+            <span style="font-size:11.5px;color:var(--ink-4);">em planejamento</span>
           </div>
         </div>
       `;
 
-      grid.innerHTML = cards + comingCard;
-    })();
-
-    // KPIs consolidados a partir do mock
-    (async function () {
-      const contas = await R2A.data.list(R2A_CONFIG.COLLECTIONS.CONTAS);
-      const contasAtivas = contas.filter(c => c.ativo !== false);
-      document.getElementById('kpi-contas').textContent = contasAtivas.length;
-
-      const pendentes = R2A_MOCK.BANCO.filter(b => b.status === 'pendente').length;
-      document.getElementById('kpi-pendentes').textContent = pendentes;
-
-      // Taxa do mês corrente baseada no histórico mock
-      const ultimo = R2A_MOCK.HISTORICO_MENSAL[R2A_MOCK.HISTORICO_MENSAL.length - 1];
-      const taxa = ultimo ? Math.round(ultimo.conciliados_qtd / (ultimo.conciliados_qtd + ultimo.pendentes_qtd) * 100) : 0;
-      document.getElementById('kpi-taxa').textContent = taxa + '%';
-
-      document.getElementById('kpi-atividade').textContent = 'Conciliação';
-      document.getElementById('kpi-atividade-sub').textContent = 'há instantes';
+      grid.innerHTML = html + coming;
     })();
   }
 </script>

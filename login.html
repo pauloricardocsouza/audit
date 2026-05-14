@@ -4,23 +4,72 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login · R2 Audit</title>
-<link rel="stylesheet" href="shared.css?v=0.13">
+<link rel="stylesheet" href="styles/theme.css?v=0.14">
 <style>
-  body { background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-  .login-card { width: 100%; max-width: 380px; background: white; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); overflow: hidden; }
-  .login-head { padding: 28px 28px 20px; text-align: center; background: linear-gradient(135deg, var(--gray-grad-dark) 0%, var(--gray-grad-mid) 100%); color: white; }
-  .login-head .logo { display: block; margin: 0 auto 14px; max-width: 220px; width: 100%; height: auto; }
-  .login-head h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.01em; }
-  .login-head p { font-size: 12px; opacity: 0.85; }
-  .login-body { padding: 24px 28px 28px; }
+  body { background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .login-card {
+    width: 100%; max-width: 400px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-pop);
+    overflow: hidden;
+  }
+  .login-head {
+    padding: 32px 32px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .login-head::before, .login-head::after {
+    content: '';
+    position: absolute;
+    border-radius: 999px;
+    background: rgba(255,255,255,.04);
+    pointer-events: none;
+  }
+  .login-head::before { width: 240px; height: 240px; top: -140px; right: -80px; }
+  .login-head::after  { width: 180px; height: 180px; bottom: -120px; left: -60px; }
+  .login-head .logo { display: block; margin: 0 auto 14px; max-width: 220px; width: 100%; height: auto; position: relative; z-index: 1; }
+  .login-head h1 { color: #fff; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 4px; position: relative; z-index: 1; }
+  .login-head p { font-size: 12.5px; opacity: 0.85; position: relative; z-index: 1; font-family: var(--font-mono); letter-spacing: 0.06em; }
+  .login-body { padding: 28px 32px 24px; }
   .login-body .field { margin-bottom: 14px; }
-  .login-body label { margin-bottom: 6px; }
-  .login-body input { width: 100%; padding: 9px 12px; font-size: 13px; }
-  .login-body .btn { width: 100%; justify-content: center; padding: 10px; font-size: 13px; }
-  .login-footer { padding: 12px; text-align: center; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); background: var(--surface-2); }
-  .err { background: var(--danger-bg); color: var(--danger); padding: 8px 12px; border-radius: var(--radius); font-size: 12px; margin-bottom: 12px; display: none; }
+  .login-footer {
+    padding: 14px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-5);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-top: 1px solid var(--line);
+    background: var(--navy-tint);
+  }
+  .err {
+    background: var(--err-soft);
+    color: var(--err);
+    padding: 9px 12px;
+    border-radius: var(--r-md);
+    font-size: 12px;
+    margin-bottom: 14px;
+    display: none;
+    border: 1px solid #F4C7C7;
+  }
   .err.show { display: block; }
-  .dev-hint { background: var(--warning-bg); color: var(--warning); padding: 8px 12px; border-radius: var(--radius); font-size: 11px; margin-bottom: 14px; text-align: center; }
+  .dev-hint {
+    background: var(--warn-soft);
+    color: var(--warn);
+    padding: 9px 12px;
+    border-radius: var(--r-md);
+    font-size: 11.5px;
+    margin-bottom: 14px;
+    text-align: center;
+    border: 1px solid #F1D9A5;
+  }
+  .login-body .r2-btn { width: 100%; justify-content: center; padding: 11px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -29,7 +78,7 @@
   <div class="login-head">
     <img class="logo" src="logoR2branco.png" alt="R2 Soluções Empresariais">
     <h1>R2 Audit</h1>
-    <p>Plataforma de auditoria</p>
+    <p>PLATAFORMA DE AUDITORIA</p>
   </div>
 
   <div class="login-body">
@@ -39,26 +88,26 @@
 
     <div class="err" id="err"></div>
 
-    <div class="field">
+    <div class="field r2-field">
       <label for="email">E-mail</label>
-      <input type="email" id="email" placeholder="seu@email.com" autocomplete="username">
+      <input class="r2-input" type="email" id="email" placeholder="seu@email.com" autocomplete="username">
     </div>
 
-    <div class="field">
+    <div class="field r2-field">
       <label for="senha">Senha</label>
-      <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password">
+      <input class="r2-input" type="password" id="senha" placeholder="••••••••" autocomplete="current-password">
     </div>
 
-    <button class="btn btn-primary" id="btn-login">Entrar</button>
+    <button class="r2-btn r2-btn--primary" id="btn-login">Entrar</button>
   </div>
 
   <div class="login-footer">
-    R2 SOLUÇÕES EMPRESARIAIS · v0.13
+    R2 SOLUÇÕES EMPRESARIAIS · v0.14
   </div>
 </div>
 
-<script src="config.js?v=0.13"></script>
-<script src="shared.js?v=0.13"></script>
+<script src="config.js?v=0.14"></script>
+<script src="shared.js?v=0.14"></script>
 <script>
   // dev-hint oculto durante teste privado (mesmo com MODO_DEV=true)
   // Para reativar: descomente a linha abaixo

@@ -141,133 +141,180 @@
   // TOAST
   // ----------------------------------------------------------
   R2A.toast = function (msg, type = 'info', timeout = 3000) {
-    let c = document.getElementById('r2a-toasts');
-    if (!c) { c = document.createElement('div'); c.id = 'r2a-toasts'; c.className = 'r2a-toast-container'; document.body.appendChild(c); }
+    let c = document.getElementById('r2-toasts');
+    if (!c) { c = document.createElement('div'); c.id = 'r2-toasts'; c.className = 'r2-toasts'; document.body.appendChild(c); }
     const el = document.createElement('div');
-    el.className = `r2a-toast ${type}`;
+    el.className = `r2-toast ${type}`;
     el.textContent = msg;
     c.appendChild(el);
-    setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 200); }, timeout);
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transition = 'opacity 0.2s';
+      setTimeout(() => el.remove(), 250);
+    }, timeout);
   };
 
   R2A.confirm = function (msg) { return Promise.resolve(window.confirm(msg)); };
 
   // ----------------------------------------------------------
-  // SHELL: renderiza sidebar + topbar
+  // ÍCONES SVG (inline, stroke 1.8, currentColor)
+  // ----------------------------------------------------------
+  const ICONS = {
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>',
+    conciliador: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a2 2 0 0 1 2-2h16"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a2 2 0 0 1-2 2H3"/></svg>',
+    contratos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
+    chev: '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+    menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+    sep: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+    logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'
+  };
+
+  function moduleIcon(id) {
+    return ICONS[id] || ICONS.contratos;
+  }
+
+  // ----------------------------------------------------------
+  // SHELL: renderiza sidebar + topbar + footer
   // active = { modulo: 'conciliador', item: 'conciliacao' } ou { dashboardGeral: true }
+  // Estrutura nova .r2-side / .r2-top (compatível com .r2a-sidebar legado via aliases CSS)
   // ----------------------------------------------------------
   R2A.renderShell = function (active = {}) {
     const u = R2A.session.user();
     const collapsed = localStorage.getItem('r2a_sidebar_collapsed') === '1';
 
-    // SIDEBAR
-    const sidebar = document.querySelector('.r2a-sidebar');
+    // Garante a classe .r2-app no container
+    const shell = document.querySelector('.r2a-shell, .r2-app');
+    if (shell) shell.classList.toggle('is-collapsed', collapsed);
+    if (shell) shell.classList.toggle('sidebar-collapsed', collapsed);
+
+    // ---------------- SIDEBAR ----------------
+    const sidebar = document.querySelector('.r2a-sidebar, .r2-side');
     if (sidebar) {
-      sidebar.classList.toggle('collapsed', collapsed);
+      sidebar.className = (sidebar.className.replace(/(^|\s)(r2a-sidebar|r2-side)(\s|$)/g, ' ').trim() + ' r2-side r2a-sidebar').trim();
+      const userIniciais = (u.iniciais || (u.nome ? u.nome.slice(0, 2).toUpperCase() : 'DV'));
+
       sidebar.innerHTML = `
-        <div class="r2a-sb-head">
-          <a href="${rel('index.html')}" class="r2a-sb-brand">
-            <img class="r2a-sb-logo-img" src="${rel('logoR2azul.png')}" alt="R2 Soluções Empresariais">
-            <div class="r2a-sb-logo">R²</div>
-            <span class="r2a-sb-name">${CFG.APP_NAME}</span>
+        <div class="r2-side__brand">
+          <a href="${rel('index.html')}" style="display:flex;align-items:center;">
+            <img src="${rel('logoR2azul.png')}" alt="R2 Soluções Empresariais">
           </a>
-          <button class="r2a-sb-toggle" title="Recolher" id="r2a-sb-toggle">‹</button>
         </div>
 
-        <nav class="r2a-sb-nav">
-          <a href="${rel('index.html')}" class="r2a-sb-item ${active.dashboardGeral ? 'active' : ''}">
-            <span class="r2a-sb-icon">◇</span>
-            <span class="r2a-sb-label">Dashboard geral</span>
+        <div class="r2-side__pill">
+          <span class="dot"></span> ${CFG.APP_NAME} · v${CFG.APP_VERSION}
+        </div>
+
+        <nav class="r2-side__nav">
+          <a href="${rel('index.html')}" class="r2-side__item ${active.dashboardGeral ? 'is-active' : ''}">
+            ${ICONS.home}<span>Dashboard geral</span>
           </a>
 
-          <div class="r2a-sb-section">
-            <span class="r2a-sb-section-label">Módulos</span>
-          </div>
+          <div class="r2-side__group">Módulos</div>
 
           ${CFG.MODULOS.map(m => {
             const isActive = active.modulo === m.id;
             const submenuOpen = isActive || localStorage.getItem('r2a_sb_open_' + m.id) === '1';
+            const firstHref = m.itens && m.itens[0] ? rel(m.itens[0].href) : '#';
             return `
-              <div class="r2a-sb-module ${isActive ? 'active' : ''} ${submenuOpen ? 'open' : ''} ${m.ativo === false ? 'disabled' : ''}">
-                <button class="r2a-sb-module-head" data-module="${m.id}">
-                  <span class="r2a-sb-icon">${m.icon}</span>
-                  <span class="r2a-sb-label">${m.label}</span>
-                  <span class="r2a-sb-caret">▾</span>
-                </button>
-                <div class="r2a-sb-submenu">
-                  ${m.itens.map(it => `
-                    <a href="${rel(it.href)}" class="r2a-sb-subitem ${active.item === it.id ? 'active' : ''}">
-                      <span class="r2a-sb-subicon">${it.icon}</span>
-                      <span class="r2a-sb-label">${it.label}</span>
-                    </a>
-                  `).join('')}
-                </div>
+              <button class="r2-side__item has-sub ${isActive ? 'is-active' : ''} ${submenuOpen ? 'is-expanded' : ''}" data-module="${m.id}" data-first-href="${firstHref}">
+                ${moduleIcon(m.id)}<span>${m.label}</span>${ICONS.chev}
+              </button>
+              <div class="r2-side__sub ${submenuOpen ? 'is-open' : ''}" data-sub-of="${m.id}">
+                ${m.itens.map(it => `
+                  <a href="${rel(it.href)}" class="${active.modulo === m.id && active.item === it.id ? 'is-active' : ''}">${it.label}</a>
+                `).join('')}
               </div>
             `;
           }).join('')}
         </nav>
 
-        <div class="r2a-sb-foot">
-          <div class="r2a-sb-user">
-            <div class="r2a-sb-avatar">${u.iniciais}</div>
-            <div class="r2a-sb-user-info">
-              <div class="r2a-sb-user-name">${u.nome}</div>
-              <div class="r2a-sb-user-perfil">${u.perfil}</div>
-            </div>
-            <button class="r2a-sb-logout" id="r2a-logout" title="Sair">↗</button>
+        <div class="r2-side__user">
+          <div class="avatar">${userIniciais}</div>
+          <div class="meta">
+            <div class="name">${u.nome}</div>
+            <div class="role">${u.perfil === 'admin' ? 'Administrador' : 'Operador'}</div>
           </div>
+          <button class="logout" id="r2-logout" title="Sair">${ICONS.logout}</button>
         </div>
       `;
 
-      // Eventos da sidebar
-      document.getElementById('r2a-sb-toggle').addEventListener('click', () => {
-        const next = !document.querySelector('.r2a-sidebar').classList.contains('collapsed');
-        document.querySelector('.r2a-sidebar').classList.toggle('collapsed', next);
-        localStorage.setItem('r2a_sidebar_collapsed', next ? '1' : '0');
-      });
-
-      document.getElementById('r2a-logout').addEventListener('click', () => R2A.logout());
-
-      // Toggle de submenu por clique no head do módulo
-      document.querySelectorAll('.r2a-sb-module-head').forEach(b => {
-        b.addEventListener('click', e => {
-          const mod = b.dataset.module;
-          const wrap = b.parentElement;
-          const opened = wrap.classList.toggle('open');
-          localStorage.setItem('r2a_sb_open_' + mod, opened ? '1' : '0');
+      // Eventos: clique no item de módulo abre/fecha submenu; duplo-clique navega
+      document.querySelectorAll('.r2-side__item.has-sub').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.module;
+          const sub = document.querySelector(`.r2-side__sub[data-sub-of="${id}"]`);
+          if (!sub) return;
+          const opened = sub.classList.toggle('is-open');
+          b.classList.toggle('is-expanded', opened);
+          localStorage.setItem('r2a_sb_open_' + id, opened ? '1' : '0');
+        });
+        b.addEventListener('dblclick', () => {
+          const href = b.dataset.firstHref;
+          if (href && href !== '#') window.location.href = href;
         });
       });
+
+      const lg = document.getElementById('r2-logout');
+      if (lg) lg.addEventListener('click', () => R2A.logout());
     }
 
-    // TOPBAR (breadcrumb + utilitários)
-    const topbar = document.querySelector('.r2a-topbar');
+    // ---------------- TOPBAR ----------------
+    const topbar = document.querySelector('.r2a-topbar, .r2-top');
     if (topbar) {
+      topbar.className = (topbar.className.replace(/(^|\s)(r2a-topbar|r2-top)(\s|$)/g, ' ').trim() + ' r2-top r2a-topbar').trim();
       const crumbs = [];
-      if (active.dashboardGeral) crumbs.push('Dashboard geral');
+      if (active.dashboardGeral) crumbs.push({ label: 'Dashboard geral', last: true });
       else if (active.modulo) {
         const m = CFG.MODULOS.find(x => x.id === active.modulo);
         if (m) {
-          crumbs.push(m.label);
+          crumbs.push({ label: m.label, last: !active.item });
           if (active.item) {
             const it = m.itens.find(x => x.id === active.item);
-            if (it) crumbs.push(it.label);
+            if (it) crumbs.push({ label: it.label, last: true });
           }
         }
       }
+      const crumbsHtml = crumbs.map((c, i) =>
+        `<span class="${c.last ? 'is-current' : ''}">${c.label}</span>${!c.last ? ICONS.sep : ''}`
+      ).join('');
+
       topbar.innerHTML = `
-        <div class="r2a-crumbs">
-          ${crumbs.map((c, i) => `<span class="r2a-crumb ${i === crumbs.length - 1 ? 'last' : ''}">${c}</span>`).join('<span class="r2a-crumb-sep">/</span>')}
+        <div class="r2-top__left">
+          <button class="r2-top__menu" id="r2-top-menu" title="Menu">${ICONS.menu}</button>
+          <nav class="r2-crumbs">${crumbsHtml}</nav>
         </div>
-        <div class="r2a-topbar-right">
-          <span class="r2a-period-label">${R2A.fmt.periodoBR()}</span>
+        <div class="r2-top__right">
+          <div class="r2-search">
+            ${ICONS.search}
+            <input placeholder="Buscar lançamento, conta, contrato…" id="r2-search-global">
+          </div>
+          <button class="r2-icon-btn has-dot" title="Notificações">${ICONS.bell}</button>
         </div>
       `;
+
+      const menuBtn = document.getElementById('r2-top-menu');
+      if (menuBtn) menuBtn.addEventListener('click', () => {
+        const sh = document.querySelector('.r2a-shell, .r2-app');
+        if (!sh) return;
+        const next = !sh.classList.contains('is-collapsed');
+        sh.classList.toggle('is-collapsed', next);
+        sh.classList.toggle('sidebar-collapsed', next);
+        // mobile: abre como overlay
+        const sd = document.querySelector('.r2a-sidebar, .r2-side');
+        if (sd && window.innerWidth < 760) sd.classList.toggle('is-open');
+        localStorage.setItem('r2a_sidebar_collapsed', next ? '1' : '0');
+      });
     }
   };
 
   R2A.renderFooter = function () {
-    const f = document.querySelector('.r2a-footer');
-    if (f) f.innerHTML = `<span>DESENVOLVIDO POR ${CFG.COMPANY} · v${CFG.APP_VERSION}</span><span id="r2a-footer-status">Pronto</span>`;
+    const f = document.querySelector('.r2a-footer, .r2-footer');
+    if (f) {
+      f.className = (f.className.replace(/(^|\s)(r2a-footer|r2-footer)(\s|$)/g, ' ').trim() + ' r2-footer r2a-footer').trim();
+      f.innerHTML = `<span>${CFG.COMPANY} · v${CFG.APP_VERSION}</span><span id="r2a-footer-status">Pronto</span>`;
+    }
   };
 
   // ----------------------------------------------------------
