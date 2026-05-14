@@ -10,17 +10,17 @@
   const M = window.R2A_MOCK;
   const C = CFG.COLLECTIONS;
 
-  // Paleta de cores semântica (vai herdar do realinhamento Filadelfia depois)
+  // Paleta D2 alinhada ao theme.css
   const COLORS = {
-    success:  '#15803d',
-    successL: '#86efac',
-    warning:  '#b45309',
-    warningL: '#fbbf24',
-    danger:   '#b91c1c',
-    primary:  '#1e3a8a',
-    primaryL: '#3b5bb8',
-    accent:   '#0891b2',
-    muted:    '#cbd5e1'
+    success:  '#16A34A',
+    successL: '#86EFAC',
+    warning:  '#D97706',
+    warningL: '#FBBF24',
+    danger:   '#DC2626',
+    primary:  '#1A3A52',
+    primaryL: '#244B68',
+    accent:   '#A855F7',
+    muted:    '#CBD5E1'
   };
 
   const State = {

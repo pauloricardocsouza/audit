@@ -13,7 +13,7 @@
   .ct-vinc-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
   .ct-vinc-tbl thead th {
     background: var(--surface-2);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -27,7 +27,7 @@
   .ct-vinc-tbl tbody td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
   .ct-vinc-tbl tbody tr { cursor: pointer; transition: background 0.1s; }
   .ct-vinc-tbl tbody tr:hover { background: var(--accent-bg); }
-  .ct-vinc-tbl .diff-warn { color: var(--warning); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+  .ct-vinc-tbl .diff-warn { color: var(--warning); font-family: var(--font-mono); font-size: 10px; }
   .vinc-info {
     background: var(--accent-bg);
     border-left: 3px solid var(--accent-text);
@@ -43,7 +43,7 @@
   .ct-parcela-status.status-atraso { color: var(--danger-text); }
   .ct-parcela-status.status-aberta { color: var(--text-muted); }
   .ct-parcela-status.status-carencia { color: var(--muted); font-style: italic; }
-  .vinc-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
+  .vinc-badge { font-family: var(--font-mono); font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
   .vinc-badge.manual { background: var(--accent-bg); color: var(--accent-text); }
   .vinc-badge.auto { background: var(--surface-3); color: var(--text-dim); }
 </style>
@@ -152,7 +152,7 @@
           Tolerância automática: data ±5 dias, valor ±5%.
         </div>
         ${candidatos.length > 0 ? `
-          <h4 style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase;">Candidatos dentro da tolerância (${candidatos.length})</h4>
+          <h4 style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase;">Candidatos dentro da tolerância (${candidatos.length})</h4>
           <table class="ct-vinc-tbl" style="margin-bottom: 18px;">
             <thead>
               <tr><th>Data</th><th>Histórico</th><th class="num">Valor</th><th class="num">Diferença</th><th class="center">Status</th></tr>
@@ -162,7 +162,7 @@
         ` : '<p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">Nenhum candidato dentro da tolerância automática.</p>'}
 
         ${outros.length > 0 ? `
-          <h4 style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase;">Outros débitos disponíveis (top ${outros.length})</h4>
+          <h4 style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase;">Outros débitos disponíveis (top ${outros.length})</h4>
           <table class="ct-vinc-tbl">
             <thead>
               <tr><th>Data</th><th>Histórico</th><th class="num">Valor</th><th class="num">Diferença</th><th class="center">Status</th></tr>
@@ -282,7 +282,7 @@
         <div class="ct-page-head">
           <div class="ct-page-title">
             <h1>${banco}</h1>
-            <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.04em;">
+            <p style="font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;">
               Contrato ${c.numero_contrato} · ${R2A.contratos.fmtProduto(c.produto)}
             </p>
           </div>
@@ -462,7 +462,7 @@
                   ${c.instrumentos_relacionados.map(i => `
                     <div class="ct-info" style="margin-bottom: 8px;">
                       <span class="ct-info-label">${i.tipo.replace(/_/g, ' ')}</span>
-                      <span class="ct-info-value" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">${i.numero}</span>
+                      <span class="ct-info-value" style="font-family: var(--font-mono); font-size: 12px;">${i.numero}</span>
                     </div>
                   `).join('')}
                 </div>
