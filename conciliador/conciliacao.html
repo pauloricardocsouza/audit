@@ -55,36 +55,36 @@
     </div>
   </section>
 
-  <!-- STATS -->
+  <!-- STATS · ribbon de 6 colunas em um único card -->
   <section class="r2a-stats">
-    <div class="r2a-stat">
-      <span class="r2a-stat-label">Total Banco</span>
+    <div class="r2a-stat" data-kind="banco">
+      <span class="r2a-stat-label banco">Total Banco</span>
       <span class="r2a-stat-value" id="stat-banco-qtd">0</span>
       <span class="r2a-stat-sub" id="stat-banco-val">R$ 0,00</span>
     </div>
-    <div class="r2a-stat">
-      <span class="r2a-stat-label">Total Sistema</span>
+    <div class="r2a-stat" data-kind="sistema">
+      <span class="r2a-stat-label sistema">Total Sistema</span>
       <span class="r2a-stat-value" id="stat-sia-qtd">0</span>
       <span class="r2a-stat-sub" id="stat-sia-val">R$ 0,00</span>
     </div>
-    <div class="r2a-stat">
+    <div class="r2a-stat" data-kind="conciliados">
       <span class="r2a-stat-label">Conciliados</span>
-      <span class="r2a-stat-value success" id="stat-conc-qtd">0</span>
+      <span class="r2a-stat-value" id="stat-conc-qtd">0</span>
       <span class="r2a-stat-sub" id="stat-conc-pct">0% conciliação</span>
     </div>
-    <div class="r2a-stat">
+    <div class="r2a-stat" data-kind="pendentes">
       <span class="r2a-stat-label">Pendentes</span>
-      <span class="r2a-stat-value warning" id="stat-pend-qtd">0</span>
+      <span class="r2a-stat-value" id="stat-pend-qtd">0</span>
       <span class="r2a-stat-sub" id="stat-pend-val">R$ 0,00</span>
     </div>
-    <div class="r2a-stat">
+    <div class="r2a-stat" data-kind="ambiguos">
       <span class="r2a-stat-label">Ambíguos</span>
-      <span class="r2a-stat-value danger" id="stat-amb-qtd">0</span>
+      <span class="r2a-stat-value" id="stat-amb-qtd">0</span>
       <span class="r2a-stat-sub">requer revisão</span>
     </div>
-    <div class="r2a-stat">
+    <div class="r2a-stat" data-kind="diferenca">
       <span class="r2a-stat-label">Diferença</span>
-      <span class="r2a-stat-value muted" id="stat-diff">R$ 0,00</span>
+      <span class="r2a-stat-value danger" id="stat-diff">R$ 0,00</span>
       <span class="r2a-stat-sub">banco vs sistema</span>
     </div>
   </section>
@@ -109,7 +109,7 @@
   <section class="r2a-workspace">
     <section class="r2a-panel">
       <header class="r2a-panel-header">
-        <span class="r2a-panel-title bank">⬢ Banco</span>
+        <span class="r2a-panel-title bank">Banco</span>
         <span class="r2a-panel-badge" id="badge-banco">0 lançamentos</span>
         <input type="text" class="r2a-panel-search" placeholder="Buscar histórico..." id="search-banco">
       </header>
@@ -131,7 +131,7 @@
 
     <section class="r2a-panel">
       <header class="r2a-panel-header">
-        <span class="r2a-panel-title sia">◆ Sistema SIA</span>
+        <span class="r2a-panel-title sia">Sistema SIA</span>
         <span class="r2a-panel-badge" id="badge-sia">0 lançamentos</span>
         <input type="text" class="r2a-panel-search" placeholder="Buscar descrição..." id="search-sia">
       </header>
