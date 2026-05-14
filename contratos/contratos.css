@@ -1,346 +1,416 @@
 /* ============================================================
-   Módulo Análise de Contratos · estilos próprios
-   Usa tokens globais do shared.css (Archivo + JetBrains Mono,
-   navy #2E476F + laranja #F58634)
+   Análise de Contratos · contratos.css · estilo D2
    ============================================================ */
 
-/* Área de conteúdo do módulo */
-.ct-wrap {
-  padding: 22px 24px 32px;
-  flex: 1;
-  overflow-y: auto;
-}
+.ct-wrap { padding: 0; }
 
 .ct-page-head {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
-
 .ct-page-title h1 {
-  font-size: 22px;
+  font-size: 24px;
+  font-weight: 600;
   letter-spacing: -0.02em;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  color: var(--ink-1);
 }
-
 .ct-page-title p {
   font-size: 13px;
-  color: var(--text-2);
+  color: var(--ink-3);
 }
+.ct-page-actions { display: flex; align-items: center; gap: 10px; }
 
-.ct-page-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* ===== KPI grid ===== */
+/* KPI grid (usa o componente .r2-kpi do theme) */
 .ct-kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-  margin-bottom: 22px;
-}
-
-@media (max-width: 900px) {
-  .ct-kpi-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-/* ===== Cards do módulo ===== */
-.ct-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
   margin-bottom: 18px;
+}
+@media (max-width: 1100px) { .ct-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  { .ct-kpi-grid { grid-template-columns: 1fr; } }
+
+/* Compat: KPIs antigos (.kpi) viram .r2-kpi visualmente */
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
+  position: relative;
   overflow: hidden;
 }
+.kpi::after { display: none; }
+.kpi .label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: block;
+  margin-bottom: 12px;
+}
+.kpi .value {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.kpi .value .unit { font-size: 14px; color: var(--ink-4); font-weight: 500; margin-left: 3px; }
+.kpi .sub { font-size: 11.5px; color: var(--ink-4); margin-top: 6px; }
+.kpi.up .value, .kpi.up .label { /* mantém cor padrão; variante decorativa */ }
 
+/* Cards do módulo (.ct-panel ~ .r2-card) */
+.ct-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
 .ct-panel-head {
-  padding: 14px 18px;
-  background: var(--accent-bg);
-  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line-2);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  background: var(--surface);
 }
-
 .ct-panel-head h3 {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 600;
   letter-spacing: -0.01em;
+  color: var(--ink-1);
 }
-
 .ct-panel-head .sub {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--ink-4);
+  margin-top: 2px;
 }
-
-.ct-panel-body { padding: 16px 18px; }
+.ct-panel-body { padding: 20px; }
 .ct-panel-body.flush { padding: 0; }
 
-/* ===== Lista de contratos ===== */
+/* Lista de contratos · toolbar */
 .ct-list-toolbar {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 14px;
   flex-wrap: wrap;
   align-items: center;
 }
-
-.ct-list-toolbar .search {
-  flex: 1;
-  min-width: 220px;
+.ct-list-toolbar .search,
+.ct-list-toolbar input[type="text"],
+.ct-list-toolbar select {
+  padding: 8px 12px;
+  background: var(--surface);
+  color: var(--ink-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font-size: 12.5px;
+  font-family: inherit;
 }
+.ct-list-toolbar .search { flex: 1; min-width: 240px; }
+.ct-list-toolbar .search:focus,
+.ct-list-toolbar select:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,58,82,.12); }
 
+/* Tabela */
 .ct-tbl {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12.5px;
 }
-
 .ct-tbl thead th {
-  background: var(--surface-2);
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
-  font-weight: 700;
+  background: var(--navy-tint);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
   letter-spacing: 0.08em;
-  color: var(--text-dim);
+  color: var(--ink-4);
   text-transform: uppercase;
   text-align: left;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line-2);
   position: sticky;
   top: 0;
 }
-
 .ct-tbl thead th.num    { text-align: right; }
 .ct-tbl thead th.center { text-align: center; }
-
 .ct-tbl tbody tr {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line-2);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background .12s;
 }
-.ct-tbl tbody tr:hover { background: var(--surface-2); }
-
-.ct-tbl tbody td {
-  padding: 12px 14px;
-  vertical-align: middle;
-}
-
-.ct-tbl td.num    { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ct-tbl tbody tr:last-child { border-bottom: 0; }
+.ct-tbl tbody tr:hover { background: var(--navy-tint); }
+.ct-tbl tbody td { padding: 12px 16px; vertical-align: middle; color: var(--ink-2); }
+.ct-tbl td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink-1); }
 .ct-tbl td.center { text-align: center; }
-
-.ct-tbl .banco {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+.ct-tbl .banco { display: flex; align-items: center; gap: 8px; }
 .ct-tbl .banco-code {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
-  background: var(--accent-bg);
-  color: var(--accent-text);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: var(--navy-soft);
+  color: var(--navy);
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  font-weight: 600;
 }
-
 .ct-tbl .contrato-num {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-2);
-  margin-top: 2px;
+  color: var(--ink-4);
+  margin-top: 3px;
 }
 
-/* progresso linear */
+/* progresso */
 .ct-progress {
-  height: 6px;
-  background: var(--surface-3);
-  border-radius: 3px;
+  height: 5px;
+  background: var(--line-2);
+  border-radius: 999px;
   overflow: hidden;
-  position: relative;
 }
-.ct-progress .bar {
-  height: 100%;
-  background: var(--success);
-  transition: width 0.3s;
-}
-.ct-progress .bar.warning { background: var(--warning); }
-.ct-progress .bar.danger  { background: var(--danger); }
-.ct-progress .bar.flutuante { background: linear-gradient(90deg, var(--gray-grad-mid), var(--gray-grad-light)); }
+.ct-progress .bar { height: 100%; background: var(--ok); transition: width 0.3s; }
+.ct-progress .bar.warning   { background: var(--warn); }
+.ct-progress .bar.danger    { background: var(--err); }
+.ct-progress .bar.flutuante { background: linear-gradient(90deg, var(--navy), var(--ink-4)); }
 
-/* ===== Detalhe do contrato ===== */
+/* Detalhe · grid 2/1 */
 .ct-detail-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 18px;
+  gap: 14px;
 }
-
-@media (max-width: 1100px) {
-  .ct-detail-grid { grid-template-columns: 1fr; }
-}
+@media (max-width: 1100px) { .ct-detail-grid { grid-template-columns: 1fr; } }
 
 .ct-info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px 18px;
+  gap: 14px 18px;
 }
+@media (max-width: 720px) { .ct-info-grid { grid-template-columns: repeat(2, 1fr); } }
 
-@media (max-width: 720px) {
-  .ct-info-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-.ct-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
+.ct-info { display: flex; flex-direction: column; gap: 2px; }
 .ct-info-label {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--ink-4);
   text-transform: uppercase;
   letter-spacing: 0.10em;
 }
-
 .ct-info-value {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--ink-1);
   font-variant-numeric: tabular-nums;
 }
-
 .ct-info-value.lg {
   font-size: 18px;
-  font-weight: 800;
   letter-spacing: -0.01em;
 }
+.ct-info-sub { font-size: 11.5px; color: var(--ink-4); }
 
-.ct-info-sub {
-  font-size: 11px;
-  color: var(--text-2);
-}
+.ct-tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
 
-/* badges de garantia */
-.ct-tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-/* ===== Cronograma de parcelas ===== */
-.ct-cronograma {
-  max-height: 480px;
-  overflow-y: auto;
-}
-
+/* Cronograma */
+.ct-cronograma { max-height: 480px; overflow-y: auto; }
 .ct-cronograma table {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
 }
-
 .ct-cronograma thead th {
-  position: sticky;
-  top: 0;
-  background: var(--surface-2);
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  position: sticky; top: 0;
+  background: var(--navy-tint);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-dim);
-  padding: 9px 12px;
+  color: var(--ink-4);
+  padding: 9px 14px;
   text-align: left;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line-2);
+  font-weight: 600;
 }
-
 .ct-cronograma thead th.num    { text-align: right; }
 .ct-cronograma thead th.center { text-align: center; }
-
 .ct-cronograma tbody td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line-2);
+  color: var(--ink-2);
 }
-
-.ct-cronograma tbody td.num    { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ct-cronograma tbody td.num    { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink-1); }
 .ct-cronograma tbody td.center { text-align: center; }
-
-.ct-cronograma tbody tr.carencia { background: var(--surface-2); }
-.ct-cronograma tbody tr.carencia td { color: var(--muted); font-style: italic; }
-.ct-cronograma tbody tr.paga td .ct-parcela-status { color: var(--success-text); }
-.ct-cronograma tbody tr.atraso td .ct-parcela-status { color: var(--warning); }
-.ct-cronograma tbody tr.aberta td .ct-parcela-status { color: var(--text-muted); }
-
+.ct-cronograma tbody tr.carencia { background: var(--navy-tint); }
+.ct-cronograma tbody tr.carencia td { color: var(--ink-4); font-style: italic; }
+.ct-cronograma tbody tr.paga    td .ct-parcela-status { color: var(--ok); }
+.ct-cronograma tbody tr.atraso  { background: var(--err-soft); }
+.ct-cronograma tbody tr.atraso  td .ct-parcela-status { color: var(--err); }
+.ct-cronograma tbody tr.aberta  td .ct-parcela-status { color: var(--ink-4); }
 .ct-parcela-status {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+.ct-parcela-status.status-pago        { color: var(--ok); }
+.ct-parcela-status.status-pago_menor  { color: var(--warn); }
+.ct-parcela-status.status-pago_maior  { color: var(--ambig); }
+.ct-parcela-status.status-atraso      { color: var(--err); }
+.ct-parcela-status.status-aberta      { color: var(--ink-4); }
+.ct-parcela-status.status-carencia    { color: var(--ink-5); font-style: italic; }
 
-/* ===== Upload area ===== */
+/* Dropzone */
 .ct-dropzone {
-  border: 2px dashed var(--border-strong);
-  border-radius: var(--radius-lg);
-  padding: 40px 24px;
+  border: 2px dashed var(--line);
+  border-radius: var(--r-xl);
+  padding: 48px 24px;
   text-align: center;
-  background: var(--surface-2);
+  background: var(--surface);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  margin-bottom: 18px;
+  transition: border-color .15s, background .15s;
+  margin-bottom: 14px;
 }
-
-.ct-dropzone:hover,
-.ct-dropzone.drag {
-  border-color: var(--highlight);
-  background: var(--highlight-bg);
+.ct-dropzone:hover, .ct-dropzone.drag {
+  border-color: var(--navy);
+  background: var(--navy-tint);
 }
-
 .ct-dropzone-icon {
   font-size: 40px;
   margin-bottom: 8px;
-  color: var(--accent-text);
+  color: var(--navy);
 }
-
 .ct-dropzone h3 {
   font-size: 16px;
   letter-spacing: -0.01em;
   margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--ink-1);
 }
-
-.ct-dropzone p {
-  font-size: 12px;
-  color: var(--text-2);
-  margin-bottom: 12px;
-}
-
+.ct-dropzone p { font-size: 12.5px; color: var(--ink-3); margin-bottom: 12px; }
 .ct-dropzone .hint {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-5);
+  letter-spacing: 0.10em;
   text-transform: uppercase;
 }
 
-/* ===== Simulador ===== */
+/* Form do simulador */
 .ct-sim-form {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px 18px;
 }
-@media (max-width: 720px) { .ct-sim-form { grid-template-columns: 1fr; } }
-
+@media (max-width: 760px) { .ct-sim-form { grid-template-columns: 1fr; } }
 .ct-sim-form .field { display: flex; flex-direction: column; gap: 4px; }
+.ct-sim-form .field label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-4);
+}
 .ct-sim-form input,
-.ct-sim-form select { width: 100%; }
+.ct-sim-form select {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--surface);
+  color: var(--ink-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font: inherit;
+  font-size: 13px;
+}
+.ct-sim-form input:focus,
+.ct-sim-form select:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,58,82,.12); }
+
+/* Tags (garantia, etc) viram pills navy */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--navy-soft);
+  color: var(--navy);
+}
+.tag.acc { background: var(--navy-soft);   color: var(--navy); }
+.tag.hl  { background: var(--warn-soft);   color: var(--warn); }
+.tag.grn { background: var(--ok-soft);     color: var(--ok); }
+.tag.dnd { background: var(--err-soft);    color: var(--err); }
+.tag.vio { background: var(--ambig-soft);  color: var(--ambig); }
+.tag.mut { background: var(--line-2);      color: var(--ink-4); }
+
+/* Pills (.pill) legadas usadas no badge "ativo" */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--navy-soft);
+  color: var(--navy);
+}
+.pill.conciliado { background: var(--ok-soft);    color: var(--ok); }
+.pill.pendente   { background: var(--line-2);     color: var(--ink-4); }
+
+/* Botões legados (.btn, .btn-primary etc) usados nas páginas de contratos */
+.ct-wrap .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: var(--r-md);
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--ink-2);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .12s, border-color .12s;
+}
+.ct-wrap .btn:hover:not(:disabled) { background: var(--navy-tint); border-color: var(--ink-5); }
+.ct-wrap .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.ct-wrap .btn.btn-sm { padding: 5px 10px; font-size: 11px; }
+.ct-wrap .btn.btn-primary {
+  background: var(--navy); color: #fff; border-color: var(--navy-deep);
+  box-shadow: 0 1px 0 rgba(0,0,0,.08);
+}
+.ct-wrap .btn.btn-primary:hover { background: var(--navy-deep); }
+.ct-wrap .btn.btn-success {
+  background: var(--ok); color: #fff; border-color: #128A3D;
+  box-shadow: 0 1px 0 rgba(0,0,0,.08);
+}
+.ct-wrap .btn.btn-success:hover { background: #128A3D; }
+.ct-wrap .btn.btn-ghost { background: transparent; color: var(--ink-3); border-color: transparent; }
+.ct-wrap .btn.btn-ghost:hover { background: var(--navy-tint); color: var(--ink-1); }
+.ct-wrap .btn.btn-danger,
+.ct-wrap .btn.btn-danger-ghost {
+  background: transparent; color: var(--err); border-color: transparent;
+}
+.ct-wrap .btn.btn-danger:hover,
+.ct-wrap .btn.btn-danger-ghost:hover { background: var(--err-soft); }
