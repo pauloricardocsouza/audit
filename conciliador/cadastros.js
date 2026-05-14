@@ -103,9 +103,18 @@
           <tbody>
             ${items.map(c => {
               const tipo = CFG.TIPOS_CONTA.find(t => t.id === (c.tipo || 'corrente')) || CFG.TIPOS_CONTA[0];
+              // Indicador de vínculo CC ↔ Garantida
+              let vincTxt = '';
+              if (c.tipo === 'garantida' && c.conta_vinculada_id) {
+                const cc = State.contas.find(x => x.id === c.conta_vinculada_id);
+                vincTxt = cc ? `<div class="vinc-info">↔ vinculada a ${cc.apelido}</div>` : '';
+              } else if ((c.tipo || 'corrente') === 'corrente') {
+                const cg = State.contas.find(x => x.conta_vinculada_id === c.id);
+                if (cg) vincTxt = `<div class="vinc-info">↔ garantida: ${cg.apelido}</div>`;
+              }
               return `
               <tr class="${c.ativo === false ? 'inactive' : ''}">
-                <td><strong>${c.apelido || '—'}</strong>${c.ativo === false ? ' <span class="pill ignorado">inativa</span>' : ''}</td>
+                <td><strong>${c.apelido || '—'}</strong>${c.ativo === false ? ' <span class="pill ignorado">inativa</span>' : ''}${vincTxt}</td>
                 <td><span class="pill tipo-${tipo.id}">${tipo.label}</span></td>
                 <td>${c.banco || '—'}</td>
                 <td>${c.agencia || '—'}</td>

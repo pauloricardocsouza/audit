@@ -297,9 +297,19 @@
             ${ICONS.search}
             <input placeholder="Buscar lançamento, conta, contrato…" id="r2-search-global">
           </div>
-          <button class="r2-icon-btn has-dot" title="Notificações">${ICONS.bell}</button>
+          <button class="r2-icon-btn" id="r2-bell" title="Notificações">${ICONS.bell}</button>
         </div>
       `;
+
+      const bell = document.getElementById('r2-bell');
+      if (bell) {
+        bell.addEventListener('click', (e) => {
+          e.stopPropagation();
+          R2A._toggleNotifications(bell);
+        });
+        // Atualiza dot/contagem em background
+        R2A._refreshBell();
+      }
 
       const menuBtn = document.getElementById('r2-top-menu');
       if (menuBtn) menuBtn.addEventListener('click', () => {
@@ -332,6 +342,144 @@
       });
     }
   };
+
+  // ----------------------------------------------------------
+  // NOTIFICAÇÕES (sino do topbar)
+  // ----------------------------------------------------------
+  R2A.notifications = {
+    _cache: null,
+    _cacheAt: 0,
+
+    async compute() {
+      // cache de 30s para evitar recomputar a cada toggle
+      if (this._cache && (Date.now() - this._cacheAt) < 30000) return this._cache;
+      const out = [];
+      const COL = CFG.COLLECTIONS;
+
+      // 1. Lançamentos ambíguos (Conciliador)
+      try {
+        const banco = await R2A.data.list(COL.LANCAMENTOS_BANCO);
+        const amb = banco.filter(b => b.status === 'ambiguo');
+        if (amb.length > 0) {
+          out.push({
+            severidade: 'warn',
+            icone: '◆',
+            titulo: `${amb.length} lançamento${amb.length > 1 ? 's' : ''} ambíguo${amb.length > 1 ? 's' : ''}`,
+            sub: 'Requer revisão manual no Conciliador',
+            href: rel('conciliador/conciliacao.html')
+          });
+        }
+      } catch {}
+
+      // 2. Parcelas em atraso + próximas 30d (Análise Contratos)
+      try {
+        if (R2A.contratos && R2A.contratos.kpisDashboard) {
+          const contratos = await R2A.data.list(COL.CONTRATOS);
+          const lancs = await R2A.data.list(COL.LANCAMENTOS_BANCO);
+          const k = R2A.contratos.kpisDashboard(contratos, lancs);
+          if (k.qtdAtraso > 0) {
+            out.push({
+              severidade: 'err',
+              icone: '!',
+              titulo: `${k.qtdAtraso} parcela${k.qtdAtraso > 1 ? 's' : ''} em atraso`,
+              sub: `Total ${R2A.fmt.moeda(k.totalAtraso, { sinal: false })}`,
+              href: rel('contratos/dashboard.html')
+            });
+          }
+          if (k.qtdProx30 > 0) {
+            out.push({
+              severidade: 'info',
+              icone: '⏱',
+              titulo: `${k.qtdProx30} parcela${k.qtdProx30 > 1 ? 's' : ''} a vencer (30 dias)`,
+              sub: `Total ${R2A.fmt.moeda(k.totalProx30, { sinal: false })}`,
+              href: rel('contratos/dashboard.html')
+            });
+          }
+        }
+      } catch {}
+
+      this._cache = out;
+      this._cacheAt = Date.now();
+      return out;
+    },
+
+    invalidate() { this._cache = null; this._cacheAt = 0; }
+  };
+
+  R2A._refreshBell = async function () {
+    try {
+      const items = await R2A.notifications.compute();
+      const bell = document.getElementById('r2-bell');
+      if (!bell) return;
+      bell.classList.toggle('has-dot', items.length > 0);
+      bell.setAttribute('data-count', items.length);
+    } catch {}
+  };
+
+  R2A._toggleNotifications = async function (anchor) {
+    let dd = document.getElementById('r2-notif-dropdown');
+    if (dd) {
+      dd.remove();
+      document.removeEventListener('click', R2A._closeNotifOnOutside);
+      return;
+    }
+    dd = document.createElement('div');
+    dd.id = 'r2-notif-dropdown';
+    dd.className = 'r2-notif-dropdown';
+    const rect = anchor.getBoundingClientRect();
+    dd.style.position = 'fixed';
+    dd.style.top = (rect.bottom + 8) + 'px';
+    dd.style.right = Math.max(14, window.innerWidth - rect.right) + 'px';
+
+    dd.innerHTML = `
+      <div class="r2-notif__head">
+        <span>Notificações</span>
+        <button class="r2-notif__close" title="Fechar">✕</button>
+      </div>
+      <div class="r2-notif__body"><div class="r2-spin" style="margin: 24px auto; display: block;"></div></div>
+    `;
+    document.body.appendChild(dd);
+    dd.querySelector('.r2-notif__close').addEventListener('click', () => R2A._toggleNotifications(anchor));
+
+    setTimeout(() => document.addEventListener('click', R2A._closeNotifOnOutside), 10);
+
+    const items = await R2A.notifications.compute();
+    const body = dd.querySelector('.r2-notif__body');
+    if (items.length === 0) {
+      body.innerHTML = '<div class="r2-notif__empty"><div style="font-size:24px;margin-bottom:6px;opacity:.4;">✓</div>Nada pendente · tudo em dia</div>';
+    } else {
+      body.innerHTML = items.map(item => `
+        <a class="r2-notif__item" href="${item.href}">
+          <div class="r2-notif__ico ${item.severidade}">${item.icone}</div>
+          <div class="r2-notif__info">
+            <div class="title">${item.titulo}</div>
+            <div class="sub">${item.sub}</div>
+          </div>
+        </a>
+      `).join('');
+    }
+  };
+
+  R2A._closeNotifOnOutside = function (e) {
+    const dd = document.getElementById('r2-notif-dropdown');
+    if (dd && !dd.contains(e.target) && !e.target.closest('#r2-bell')) {
+      dd.remove();
+      document.removeEventListener('click', R2A._closeNotifOnOutside);
+    }
+  };
+
+  // ESC global · fecha modais, sidebar mobile e dropdown de notificações
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.r2-modal-backdrop.is-open, .r2a-modal-backdrop.open').forEach(m => {
+      m.classList.remove('is-open');
+      m.classList.remove('open');
+    });
+    const sd = document.querySelector('.r2a-sidebar.is-open, .r2-side.is-open');
+    if (sd) { sd.classList.remove('is-open'); R2A._toggleSideBackdrop && R2A._toggleSideBackdrop(false); }
+    const dd = document.getElementById('r2-notif-dropdown');
+    if (dd) { dd.remove(); document.removeEventListener('click', R2A._closeNotifOnOutside); }
+  });
 
   // Backdrop overlay mobile da sidebar
   R2A._toggleSideBackdrop = function (show) {

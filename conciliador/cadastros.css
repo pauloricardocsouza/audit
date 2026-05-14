@@ -138,6 +138,14 @@
 .r2a-data-tbl tbody td.right  { text-align: right; font-variant-numeric: tabular-nums; }
 .r2a-data-tbl tbody td.center { text-align: center; }
 
+.r2a-data-tbl .vinc-info {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--navy);
+  margin-top: 3px;
+  letter-spacing: 0.02em;
+}
+
 .r2a-row-actions { display: inline-flex; gap: 4px; justify-content: flex-end; }
 
 .r2a-icon-btn {

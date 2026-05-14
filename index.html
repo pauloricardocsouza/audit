@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>R2 Audit · Dashboard geral</title>
-<link rel="stylesheet" href="styles/theme.css?v=0.21">
-<link rel="stylesheet" href="shared.css?v=0.21">
+<link rel="stylesheet" href="styles/theme.css?v=0.22">
+<link rel="stylesheet" href="shared.css?v=0.22">
 </head>
 <body>
 
@@ -93,10 +93,10 @@
   </div>
 </div>
 
-<script src="config.js?v=0.21"></script>
-<script src="shared.js?v=0.21"></script>
-<script src="mock-data.js?v=0.21"></script>
-<script src="data.js?v=0.21"></script>
+<script src="config.js?v=0.22"></script>
+<script src="shared.js?v=0.22"></script>
+<script src="mock-data.js?v=0.22"></script>
+<script src="data.js?v=0.22"></script>
 <script>
   if (!R2A.requireAuth()) { /* já redirecionou */ }
   else {
@@ -116,24 +116,78 @@
       document.getElementById('hero-title').textContent = `${cumprimento}, ${u.nome.split(' ')[0]}`;
     })();
 
-    // KPIs + Hero stat
+    // KPIs + Hero stat · todos calculados de dados reais
     (async function () {
-      const contas = await R2A.data.list(R2A_CONFIG.COLLECTIONS.CONTAS);
+      const C = R2A_CONFIG.COLLECTIONS;
+      const contas = await R2A.data.list(C.CONTAS);
       const contasAtivas = contas.filter(c => c.ativo !== false);
       document.getElementById('kpi-contas').textContent = contasAtivas.length;
 
-      const pendentes = (R2A_MOCK.BANCO || []).filter(b => b.status === 'pendente').length;
+      const banco = await R2A.data.list(C.LANCAMENTOS_BANCO);
+      const pendentes = banco.filter(b => b.status === 'pendente').length;
       document.getElementById('kpi-pendentes').textContent = pendentes;
-      document.getElementById('kpi-pendentes-delta').textContent = '↓ 2';
-      document.getElementById('hero-sub').textContent = `Você tem ${pendentes} lançamento${pendentes === 1 ? '' : 's'} aguardando conciliação. Bora dar uma olhada?`;
 
-      const ultimo = R2A_MOCK.HISTORICO_MENSAL[R2A_MOCK.HISTORICO_MENSAL.length - 1];
+      // Delta pendentes · compara com mes anterior do historico
+      const hist = R2A_MOCK.HISTORICO_MENSAL || [];
+      const histPendAnt = hist.length > 1 ? hist[hist.length - 2].pendentes_qtd : pendentes;
+      const deltaPend = pendentes - histPendAnt;
+      const deltaPendEl = document.getElementById('kpi-pendentes-delta');
+      if (deltaPend < 0) {
+        deltaPendEl.textContent = `↓ ${Math.abs(deltaPend)}`;
+        deltaPendEl.className = 'r2-kpi__delta r2-kpi__delta--up';
+      } else if (deltaPend > 0) {
+        deltaPendEl.textContent = `↑ ${deltaPend}`;
+        deltaPendEl.className = 'r2-kpi__delta r2-kpi__delta--down';
+      } else {
+        deltaPendEl.textContent = '— estável';
+        deltaPendEl.className = 'r2-kpi__delta r2-kpi__delta--flat';
+      }
+
+      document.getElementById('hero-sub').textContent = pendentes > 0
+        ? `Você tem ${pendentes} lançamento${pendentes === 1 ? '' : 's'} aguardando conciliação. Bora dar uma olhada?`
+        : 'Tudo conciliado · nenhuma pendência aguardando ação.';
+
+      // Taxa de conciliação · ultimo mes do historico
+      const ultimo = hist[hist.length - 1];
       const taxa = ultimo ? Math.round(ultimo.conciliados_qtd / (ultimo.conciliados_qtd + ultimo.pendentes_qtd) * 100) : 0;
       document.getElementById('kpi-taxa').innerHTML = `${taxa}<span class="unit">%</span>`;
-      document.getElementById('kpi-taxa-delta').textContent = '↑ 6pp';
 
-      document.getElementById('kpi-atividade').textContent = 'agora';
-      document.getElementById('kpi-atividade-sub').textContent = 'conciliação · há instantes';
+      const anterior = hist[hist.length - 2];
+      const taxaAnt = anterior ? Math.round(anterior.conciliados_qtd / (anterior.conciliados_qtd + anterior.pendentes_qtd) * 100) : taxa;
+      const deltaTaxa = taxa - taxaAnt;
+      const deltaTaxaEl = document.getElementById('kpi-taxa-delta');
+      if (deltaTaxa > 0) {
+        deltaTaxaEl.textContent = `↑ ${deltaTaxa}pp`;
+        deltaTaxaEl.className = 'r2-kpi__delta r2-kpi__delta--up';
+      } else if (deltaTaxa < 0) {
+        deltaTaxaEl.textContent = `↓ ${Math.abs(deltaTaxa)}pp`;
+        deltaTaxaEl.className = 'r2-kpi__delta r2-kpi__delta--down';
+      } else {
+        deltaTaxaEl.textContent = '— estável';
+        deltaTaxaEl.className = 'r2-kpi__delta r2-kpi__delta--flat';
+      }
+
+      // Ultima atividade · busca da trilha de auditoria
+      const audit = await R2A.data.list(C.AUDITORIA);
+      const atvEl = document.getElementById('kpi-atividade');
+      const atvSubEl = document.getElementById('kpi-atividade-sub');
+      if (audit.length > 0) {
+        audit.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
+        const u = audit[0];
+        const dt = new Date(u.ts);
+        const diffMin = Math.floor((new Date() - dt) / 60000);
+        let label;
+        if (diffMin < 1) label = 'agora';
+        else if (diffMin < 60) label = `${diffMin}m atrás`;
+        else if (diffMin < 1440) label = `${Math.floor(diffMin / 60)}h atrás`;
+        else label = `${Math.floor(diffMin / 1440)}d atrás`;
+        atvEl.textContent = label;
+        atvEl.style.fontSize = '22px';
+        atvSubEl.textContent = `${u.acao || '—'} · ${u.usuario_nome || '—'}`;
+      } else {
+        atvEl.textContent = '—';
+        atvSubEl.textContent = 'sem atividade registrada ainda';
+      }
     })();
 
     // Cards de módulos
