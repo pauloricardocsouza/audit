@@ -50,8 +50,8 @@
   // RENDER GERAL
   // ------------------------------------------------------------
   function renderTab() {
-    R2A.$$('.r2c-tab-content').forEach(t => t.classList.add('hidden'));
-    R2A.$$('.r2c-subtab').forEach(t => t.classList.toggle('active', t.dataset.tab === State.tab));
+    R2A.$$('.r2a-tab-content').forEach(t => t.classList.add('hidden'));
+    R2A.$$('.r2a-subtab').forEach(t => t.classList.toggle('active', t.dataset.tab === State.tab));
     document.getElementById('tab-' + State.tab).classList.remove('hidden');
 
     if (State.tab === 'contas') renderContas();
@@ -76,7 +76,7 @@
 
     if (items.length === 0) {
       wrap.innerHTML = `
-        <div class="r2c-data-empty">
+        <div class="r2a-data-empty">
           <div class="icon">⬢</div>
           <div class="title">Nenhuma conta cadastrada</div>
           <div class="sub">Cadastre as contas bancárias que serão conciliadas.</div>
@@ -88,7 +88,7 @@
     }
 
     wrap.innerHTML = `
-      <div class="r2c-data-tbl">
+      <div class="r2a-data-tbl">
         <table>
           <thead>
             <tr>
@@ -111,9 +111,9 @@
                 <td>${c.agencia || '—'}</td>
                 <td>${c.numero || '—'}</td>
                 <td class="right">
-                  <div class="r2c-row-actions">
-                    <button class="r2c-icon-btn" data-act="edit-conta" data-id="${c.id}" title="Editar">✎</button>
-                    <button class="r2c-icon-btn danger" data-act="del-conta" data-id="${c.id}" title="Excluir">🗑</button>
+                  <div class="r2a-row-actions">
+                    <button class="r2a-icon-btn" data-act="edit-conta" data-id="${c.id}" title="Editar">✎</button>
+                    <button class="r2a-icon-btn danger" data-act="del-conta" data-id="${c.id}" title="Excluir">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -140,33 +140,33 @@
     openModal({
       title: isEdit ? 'Editar conta bancária' : 'Nova conta bancária',
       body: `
-        <div class="r2c-form-error" id="form-err"></div>
-        <div class="r2c-form">
-          <div class="field">
-            <label>Apelido <span style="color: var(--danger)">*</span></label>
-            <input type="text" id="f-apelido" placeholder="Ex: BB · Movimento" value="${c.apelido || ''}">
-          </div>
+        <div class="r2a-form-error" id="form-err"></div>
+        <div class="r2a-form">
           <div class="row-2">
             <div class="field">
-              <label>Tipo de conta <span style="color: var(--danger)">*</span></label>
+              <label>Apelido <span class="req">*</span></label>
+              <input type="text" id="f-apelido" placeholder="Ex: BB · Movimento" value="${c.apelido || ''}" autofocus>
+            </div>
+            <div class="field">
+              <label>Tipo de conta <span class="req">*</span></label>
               <select id="f-tipo">${tiposOpts}</select>
             </div>
-            <div class="field">
-              <label>Banco <span style="color: var(--danger)">*</span></label>
-              <select id="f-banco"><option value="">— selecione —</option>${bancosOpts}</select>
-            </div>
+          </div>
+          <div class="field">
+            <label>Banco <span class="req">*</span></label>
+            <select id="f-banco"><option value="">— selecione —</option>${bancosOpts}</select>
           </div>
           <div class="row-2">
             <div class="field">
-              <label>Agência <span style="color: var(--danger)">*</span></label>
+              <label>Agência <span class="req">*</span></label>
               <input type="text" id="f-agencia" placeholder="0001-2" value="${c.agencia || ''}">
             </div>
             <div class="field">
-              <label>Número da conta <span style="color: var(--danger)">*</span></label>
+              <label>Número da conta <span class="req">*</span></label>
               <input type="text" id="f-numero" placeholder="12345-6" value="${c.numero || ''}">
             </div>
           </div>
-          <div style="font-size: 11px; color: var(--muted); padding: 8px 12px; background: var(--info-bg); border-radius: 6px;" id="tipo-hint"></div>
+          <div class="r2a-form-hint" id="tipo-hint"></div>
         </div>
       `,
       onConfirm: () => salvarConta(id)
@@ -246,7 +246,7 @@
 
     if (items.length === 0) {
       wrap.innerHTML = `
-        <div class="r2c-data-empty">
+        <div class="r2a-data-empty">
           <div class="icon">◆</div>
           <div class="title">Nenhuma categoria cadastrada</div>
           <div class="sub">Cadastre as categorias usadas nas observações dos lançamentos.</div>
@@ -258,7 +258,7 @@
     }
 
     wrap.innerHTML = `
-      <div class="r2c-data-tbl">
+      <div class="r2a-data-tbl">
         <table>
           <thead>
             <tr>
@@ -273,9 +273,9 @@
                 <td><strong>${c.nome}</strong>${c.ativo === false ? ' <span class="pill ignorado">inativa</span>' : ''}</td>
                 <td style="color: var(--text-2);">${c.obs || '—'}</td>
                 <td class="right">
-                  <div class="r2c-row-actions">
-                    <button class="r2c-icon-btn" data-act="edit-cat" data-id="${c.id}" title="Editar">✎</button>
-                    <button class="r2c-icon-btn danger" data-act="del-cat" data-id="${c.id}" title="Excluir">🗑</button>
+                  <div class="r2a-row-actions">
+                    <button class="r2a-icon-btn" data-act="edit-cat" data-id="${c.id}" title="Editar">✎</button>
+                    <button class="r2a-icon-btn danger" data-act="del-cat" data-id="${c.id}" title="Excluir">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -294,10 +294,10 @@
     openModal({
       title: isEdit ? 'Editar categoria' : 'Nova categoria',
       body: `
-        <div class="r2c-form-error" id="form-err"></div>
-        <div class="r2c-form">
+        <div class="r2a-form-error" id="form-err"></div>
+        <div class="r2a-form">
           <div class="field">
-            <label>Nome <span style="color: var(--danger)">*</span></label>
+            <label>Nome <span class="req">*</span></label>
             <input type="text" id="f-nome" placeholder="Ex: Tarifa bancária" value="${c.nome || ''}">
           </div>
           <div class="field">
@@ -358,7 +358,7 @@
 
     if (!userIsAdmin()) {
       wrap.innerHTML = `
-        <div class="r2c-locked">
+        <div class="r2a-locked">
           <div class="icon">🔒</div>
           <div>Apenas administradores podem gerenciar usuários.</div>
         </div>`;
@@ -374,7 +374,7 @@
 
     if (items.length === 0) {
       wrap.innerHTML = `
-        <div class="r2c-data-empty">
+        <div class="r2a-data-empty">
           <div class="icon">☰</div>
           <div class="title">Nenhum usuário cadastrado</div>
           <div class="sub">Cadastre os usuários R2 que terão acesso ao sistema.</div>
@@ -386,7 +386,7 @@
     }
 
     wrap.innerHTML = `
-      <div class="r2c-data-tbl">
+      <div class="r2a-data-tbl">
         <table>
           <thead>
             <tr>
@@ -403,9 +403,9 @@
                 <td>${u.email}</td>
                 <td><span class="pill ${u.perfil}">${u.perfil}</span></td>
                 <td class="right">
-                  <div class="r2c-row-actions">
-                    <button class="r2c-icon-btn" data-act="edit-user" data-id="${u.id}" title="Editar">✎</button>
-                    <button class="r2c-icon-btn danger" data-act="del-user" data-id="${u.id}" title="Excluir">🗑</button>
+                  <div class="r2a-row-actions">
+                    <button class="r2a-icon-btn" data-act="edit-user" data-id="${u.id}" title="Editar">✎</button>
+                    <button class="r2a-icon-btn danger" data-act="del-user" data-id="${u.id}" title="Excluir">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -425,19 +425,19 @@
     openModal({
       title: isEdit ? 'Editar usuário' : 'Novo usuário',
       body: `
-        <div class="r2c-form-error" id="form-err"></div>
-        <div class="r2c-form">
+        <div class="r2a-form-error" id="form-err"></div>
+        <div class="r2a-form">
           <div class="field">
-            <label>Nome <span style="color: var(--danger)">*</span></label>
+            <label>Nome <span class="req">*</span></label>
             <input type="text" id="f-nome" placeholder="Nome completo" value="${u.nome || ''}">
           </div>
           <div class="field">
-            <label>E-mail <span style="color: var(--danger)">*</span></label>
+            <label>E-mail <span class="req">*</span></label>
             <input type="email" id="f-email" placeholder="usuario@solucoesr2.com.br" value="${u.email || ''}" ${isEdit ? 'readonly' : ''}>
           </div>
           <div class="row-2">
             <div class="field">
-              <label>Perfil <span style="color: var(--danger)">*</span></label>
+              <label>Perfil <span class="req">*</span></label>
               <select id="f-perfil">
                 <option value="admin" ${u.perfil === 'admin' ? 'selected' : ''}>Admin</option>
                 <option value="operador" ${u.perfil === 'operador' ? 'selected' : ''}>Operador</option>
@@ -535,7 +535,7 @@
   // ------------------------------------------------------------
   function wire() {
     // Sub-tabs
-    R2A.$$('.r2c-subtab').forEach(t => {
+    R2A.$$('.r2a-subtab').forEach(t => {
       t.addEventListener('click', () => {
         if (t.classList.contains('locked')) return;
         State.tab = t.dataset.tab;

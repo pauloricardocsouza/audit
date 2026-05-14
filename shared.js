@@ -313,7 +313,8 @@
     const f = document.querySelector('.r2a-footer, .r2-footer');
     if (f) {
       f.className = (f.className.replace(/(^|\s)(r2a-footer|r2-footer)(\s|$)/g, ' ').trim() + ' r2-footer r2a-footer').trim();
-      f.innerHTML = `<span>${CFG.COMPANY} · v${CFG.APP_VERSION}</span><span id="r2a-footer-status">Pronto</span>`;
+      const ambiente = CFG.MODO_DEV ? 'DEV · localStorage' : 'PROD · Firestore';
+      f.innerHTML = `<span>${CFG.COMPANY} · v${CFG.APP_VERSION}</span><span id="r2a-footer-status">${ambiente}</span>`;
     }
   };
 

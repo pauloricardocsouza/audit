@@ -199,6 +199,24 @@
 }
 .r2a-form-error.show { display: block; }
 
+.r2a-form .req {
+  color: var(--ink-5);
+  font-weight: 500;
+  margin-left: 2px;
+  font-size: 11px;
+}
+.r2a-form-hint {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  padding: 9px 12px;
+  background: var(--navy-soft);
+  border-left: 3px solid var(--navy);
+  border-radius: var(--r-sm);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.r2a-form-hint:empty { display: none; }
+
 /* EMPTY */
 .r2a-data-empty {
   padding: 60px 20px;
