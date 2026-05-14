@@ -297,16 +297,50 @@
       const menuBtn = document.getElementById('r2-top-menu');
       if (menuBtn) menuBtn.addEventListener('click', () => {
         const sh = document.querySelector('.r2a-shell, .r2-app');
-        if (!sh) return;
-        const next = !sh.classList.contains('is-collapsed');
-        sh.classList.toggle('is-collapsed', next);
-        sh.classList.toggle('sidebar-collapsed', next);
-        // mobile: abre como overlay
         const sd = document.querySelector('.r2a-sidebar, .r2-side');
-        if (sd && window.innerWidth < 760) sd.classList.toggle('is-open');
-        localStorage.setItem('r2a_sidebar_collapsed', next ? '1' : '0');
+        if (!sh || !sd) return;
+        // Mobile: abre/fecha como overlay com backdrop
+        if (window.innerWidth < 760) {
+          const opened = sd.classList.toggle('is-open');
+          R2A._toggleSideBackdrop(opened);
+        } else {
+          // Desktop: alterna colapsada/expandida e persiste
+          const next = !sh.classList.contains('is-collapsed');
+          sh.classList.toggle('is-collapsed', next);
+          sh.classList.toggle('sidebar-collapsed', next);
+          localStorage.setItem('r2a_sidebar_collapsed', next ? '1' : '0');
+        }
       });
     }
+
+    // Em mobile: clique em link da sidebar fecha overlay automaticamente
+    if (sidebar) {
+      sidebar.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => {
+          if (window.innerWidth < 760) {
+            sidebar.classList.remove('is-open');
+            R2A._toggleSideBackdrop(false);
+          }
+        });
+      });
+    }
+  };
+
+  // Backdrop overlay mobile da sidebar
+  R2A._toggleSideBackdrop = function (show) {
+    let bd = document.getElementById('r2-side-backdrop');
+    if (!bd) {
+      bd = document.createElement('div');
+      bd.id = 'r2-side-backdrop';
+      bd.className = 'r2-side-backdrop';
+      bd.addEventListener('click', () => {
+        const sd = document.querySelector('.r2a-sidebar, .r2-side');
+        if (sd) sd.classList.remove('is-open');
+        bd.classList.remove('is-open');
+      });
+      document.body.appendChild(bd);
+    }
+    bd.classList.toggle('is-open', !!show);
   };
 
   R2A.renderFooter = function () {

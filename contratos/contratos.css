@@ -12,6 +12,14 @@
   margin-bottom: 18px;
   flex-wrap: wrap;
 }
+@media (max-width: 760px) {
+  .ct-page-head { gap: 10px; margin-bottom: 14px; }
+  .ct-page-title h1 { font-size: 20px; }
+  .ct-page-title p { font-size: 12.5px; }
+  .ct-page-actions { width: 100%; flex-wrap: wrap; }
+  .ct-page-actions .r2-btn,
+  .ct-page-actions .btn { flex: 1; justify-content: center; }
+}
 .ct-page-title h1 {
   font-size: 24px;
   font-weight: 600;
@@ -120,6 +128,11 @@
   font-family: inherit;
 }
 .ct-list-toolbar .search { flex: 1; min-width: 240px; }
+@media (max-width: 760px) {
+  .ct-list-toolbar { gap: 8px; }
+  .ct-list-toolbar .search { min-width: 0; width: 100%; }
+  .ct-list-toolbar select { width: 100%; }
+}
 .ct-list-toolbar .search:focus,
 .ct-list-toolbar select:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,58,82,.12); }
 
@@ -153,6 +166,10 @@
 .ct-tbl tbody tr:last-child { border-bottom: 0; }
 .ct-tbl tbody tr:hover { background: var(--navy-tint); }
 .ct-tbl tbody td { padding: 12px 16px; vertical-align: middle; color: var(--ink-2); }
+@media (max-width: 760px) {
+  .ct-tbl { min-width: 720px; }
+  .ct-tbl thead th, .ct-tbl tbody td { padding: 10px 12px; }
+}
 .ct-tbl td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink-1); }
 .ct-tbl td.center { text-align: center; }
 .ct-tbl .banco { display: flex; align-items: center; gap: 8px; }
@@ -223,7 +240,15 @@
 .ct-tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* Cronograma */
-.ct-cronograma { max-height: 480px; overflow-y: auto; }
+.ct-cronograma {
+  max-height: 480px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 760px) {
+  .ct-cronograma { overflow-x: auto; }
+  .ct-cronograma table { min-width: 560px; }
+}
 .ct-cronograma table {
   width: 100%;
   border-collapse: collapse;

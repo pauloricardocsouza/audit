@@ -253,3 +253,16 @@
   gap: 6px;
 }
 .r2a-locked .icon { font-size: 24px; opacity: 0.6; }
+
+@media (max-width: 760px) {
+  .r2a-subtabs { overflow-x: auto; flex-wrap: nowrap; }
+  .r2a-subtab { white-space: nowrap; padding: 9px 12px 10px; font-size: 12px; flex-shrink: 0; }
+  .r2a-tab-toolbar { gap: 8px; }
+  .r2a-tab-toolbar .search { width: 100%; }
+  .r2a-tab-toolbar .btn,
+  .r2a-tab-toolbar .btn-primary { width: 100%; justify-content: center; }
+  .r2a-data-tbl { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .r2a-data-tbl table { min-width: 640px; }
+  .r2a-data-tbl thead th, .r2a-data-tbl tbody td { padding: 10px 12px; }
+  .r2a-form .row-2 { grid-template-columns: 1fr; }
+}
