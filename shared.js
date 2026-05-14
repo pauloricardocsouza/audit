@@ -402,11 +402,12 @@
       } catch {}
 
       // 2. Parcelas em atraso + próximas 30d (Análise Contratos)
+      let contratosCache = null;
       try {
         if (R2A.contratos && R2A.contratos.kpisDashboard) {
-          const contratos = await R2A.data.list(COL.CONTRATOS);
+          contratosCache = await R2A.data.list(COL.CONTRATOS);
           const lancs = await R2A.data.list(COL.LANCAMENTOS_BANCO);
-          const k = R2A.contratos.kpisDashboard(contratos, lancs);
+          const k = R2A.contratos.kpisDashboard(contratosCache, lancs);
           if (k.qtdAtraso > 0) {
             out.push({
               severidade: 'err',
@@ -425,6 +426,53 @@
               href: rel('contratos/dashboard.html')
             });
           }
+        }
+      } catch {}
+
+      // 3. Meses antigos não fechados (>90 dias)
+      try {
+        const banco = await R2A.data.list(COL.LANCAMENTOS_BANCO);
+        const periodos = await R2A.periodos.list();
+        const fechados = new Set(periodos.filter(p => p.status === 'fechado').map(p => p.mes));
+        const mesesObs = new Set();
+        banco.forEach(b => { if (b.data) mesesObs.add(String(b.data).slice(0, 7)); });
+        const hoje = new Date();
+        const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+        let antigos = 0;
+        mesesObs.forEach(mes => {
+          if (mes >= mesAtual) return;
+          if (fechados.has(mes)) return;
+          const [y, m] = mes.split('-').map(Number);
+          const fimMes = new Date(y, m, 0);
+          const dias = Math.floor((hoje - fimMes) / 86400000);
+          if (dias > 90) antigos++;
+        });
+        if (antigos > 0) {
+          out.push({
+            severidade: 'warn',
+            icone: '◷',
+            titulo: `${antigos} mês${antigos > 1 ? 'es' : ''} aberto${antigos > 1 ? 's' : ''} há +90 dias`,
+            sub: 'Considere fechar contabilmente',
+            href: rel('conciliador/periodos.html')
+          });
+        }
+      } catch {}
+
+      // 4. Contratos ativos sem PDF anexado
+      try {
+        const contratos = contratosCache || await R2A.data.list(COL.CONTRATOS);
+        const semPDF = contratos.filter(c =>
+          c.estado === 'ativo' &&
+          (!c.pdf_original || !c.pdf_original.url)
+        );
+        if (semPDF.length > 0) {
+          out.push({
+            severidade: 'info',
+            icone: '◫',
+            titulo: `${semPDF.length} contrato${semPDF.length > 1 ? 's' : ''} sem PDF anexado`,
+            sub: 'Faça upload do arquivo original',
+            href: rel('contratos/contratos.html')
+          });
         }
       } catch {}
 
