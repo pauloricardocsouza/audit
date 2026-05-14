@@ -142,7 +142,15 @@
   // ----------------------------------------------------------
   R2A.toast = function (msg, type = 'info', timeout = 3000) {
     let c = document.getElementById('r2-toasts');
-    if (!c) { c = document.createElement('div'); c.id = 'r2-toasts'; c.className = 'r2-toasts'; document.body.appendChild(c); }
+    if (!c) {
+      c = document.createElement('div');
+      c.id = 'r2-toasts';
+      c.className = 'r2-toasts';
+      c.setAttribute('role', 'status');
+      c.setAttribute('aria-live', 'polite');
+      c.setAttribute('aria-atomic', 'true');
+      document.body.appendChild(c);
+    }
     const el = document.createElement('div');
     el.className = `r2-toast ${type}`;
     el.textContent = msg;
@@ -185,10 +193,28 @@
     const u = R2A.session.user();
     const collapsed = localStorage.getItem('r2a_sidebar_collapsed') === '1';
 
+    // Skip link · primeira parada do Tab pra acessibilidade
+    if (!document.getElementById('r2-skip-link')) {
+      const skip = document.createElement('a');
+      skip.id = 'r2-skip-link';
+      skip.className = 'r2-skip';
+      skip.href = '#r2-main-content';
+      skip.textContent = 'Pular para o conteúdo';
+      document.body.insertBefore(skip, document.body.firstChild);
+    }
+
     // Garante a classe .r2-app no container
     const shell = document.querySelector('.r2a-shell, .r2-app');
     if (shell) shell.classList.toggle('is-collapsed', collapsed);
     if (shell) shell.classList.toggle('sidebar-collapsed', collapsed);
+
+    // Marca a área de conteúdo principal como destino do skip link
+    const content = document.querySelector('.r2a-content, .r2-content');
+    if (content) {
+      content.id = 'r2-main-content';
+      content.setAttribute('role', 'main');
+      content.setAttribute('tabindex', '-1');
+    }
 
     // ---------------- SIDEBAR ----------------
     const sidebar = document.querySelector('.r2a-sidebar, .r2-side');
@@ -196,40 +222,43 @@
       sidebar.className = (sidebar.className.replace(/(^|\s)(r2a-sidebar|r2-side)(\s|$)/g, ' ').trim() + ' r2-side r2a-sidebar').trim();
       const userIniciais = (u.iniciais || (u.nome ? u.nome.slice(0, 2).toUpperCase() : 'DV'));
 
+      sidebar.id = 'r2-side-main';
+      sidebar.setAttribute('role', 'navigation');
+      sidebar.setAttribute('aria-label', 'Navegação principal');
       sidebar.innerHTML = `
         <div class="r2-side__brand">
-          <a href="${rel('index.html')}" style="display:flex;align-items:center;">
+          <a href="${rel('index.html')}" style="display:flex;align-items:center;" aria-label="Ir para o Dashboard geral">
             <img src="${rel('logoR2azul.png')}" alt="R2 Soluções Empresariais">
           </a>
         </div>
 
-        <div class="r2-side__pill">
-          <span class="dot"></span> ${CFG.APP_NAME} · v${CFG.APP_VERSION}
+        <div class="r2-side__pill" aria-label="${CFG.APP_NAME} versão ${CFG.APP_VERSION}">
+          <span class="dot" aria-hidden="true"></span> ${CFG.APP_NAME} · v${CFG.APP_VERSION}
         </div>
 
-        <nav class="r2-side__nav">
-          <a href="${rel('index.html')}" class="r2-side__item ${active.dashboardGeral ? 'is-active' : ''}">
+        <nav class="r2-side__nav" aria-label="Itens de navegação">
+          <a href="${rel('index.html')}" class="r2-side__item ${active.dashboardGeral ? 'is-active' : ''}" ${active.dashboardGeral ? 'aria-current="page"' : ''}>
             ${ICONS.home}<span>Dashboard geral</span>
           </a>
           ${u.perfil === 'admin' ? `
-            <a href="${rel('auditoria.html')}" class="r2-side__item ${active.auditoria ? 'is-active' : ''}">
+            <a href="${rel('auditoria.html')}" class="r2-side__item ${active.auditoria ? 'is-active' : ''}" ${active.auditoria ? 'aria-current="page"' : ''}>
               ${ICONS.audit}<span>Auditoria</span>
             </a>
           ` : ''}
 
-          <div class="r2-side__group">Módulos</div>
+          <div class="r2-side__group" role="presentation">Módulos</div>
 
           ${CFG.MODULOS.map(m => {
             const isActive = active.modulo === m.id;
             const submenuOpen = isActive || localStorage.getItem('r2a_sb_open_' + m.id) === '1';
             const firstHref = m.itens && m.itens[0] ? rel(m.itens[0].href) : '#';
             return `
-              <button class="r2-side__item has-sub ${isActive ? 'is-active' : ''} ${submenuOpen ? 'is-expanded' : ''}" data-module="${m.id}" data-first-href="${firstHref}">
+              <button class="r2-side__item has-sub ${isActive ? 'is-active' : ''} ${submenuOpen ? 'is-expanded' : ''}" data-module="${m.id}" data-first-href="${firstHref}" aria-expanded="${submenuOpen}" aria-controls="r2-sub-${m.id}">
                 ${moduleIcon(m.id)}<span>${m.label}</span>${ICONS.chev}
               </button>
-              <div class="r2-side__sub ${submenuOpen ? 'is-open' : ''}" data-sub-of="${m.id}">
+              <div class="r2-side__sub ${submenuOpen ? 'is-open' : ''}" data-sub-of="${m.id}" id="r2-sub-${m.id}" role="group" aria-label="Itens de ${m.label}">
                 ${m.itens.map(it => `
-                  <a href="${rel(it.href)}" class="${active.modulo === m.id && active.item === it.id ? 'is-active' : ''}">${it.label}</a>
+                  <a href="${rel(it.href)}" class="${active.modulo === m.id && active.item === it.id ? 'is-active' : ''}" ${active.modulo === m.id && active.item === it.id ? 'aria-current="page"' : ''}>${it.label}</a>
                 `).join('')}
               </div>
             `;
@@ -237,12 +266,12 @@
         </nav>
 
         <div class="r2-side__user">
-          <div class="avatar">${userIniciais}</div>
+          <div class="avatar" aria-hidden="true">${userIniciais}</div>
           <div class="meta">
             <div class="name">${u.nome}</div>
             <div class="role">${u.perfil === 'admin' ? 'Administrador' : 'Operador'}</div>
           </div>
-          <button class="logout" id="r2-logout" title="Sair">${ICONS.logout}</button>
+          <button class="logout" id="r2-logout" title="Sair" aria-label="Sair da sessão">${ICONS.logout}</button>
         </div>
       `;
 
@@ -254,6 +283,7 @@
           if (!sub) return;
           const opened = sub.classList.toggle('is-open');
           b.classList.toggle('is-expanded', opened);
+          b.setAttribute('aria-expanded', opened ? 'true' : 'false');
           localStorage.setItem('r2a_sb_open_' + id, opened ? '1' : '0');
         });
         b.addEventListener('dblclick', () => {
@@ -289,15 +319,15 @@
 
       topbar.innerHTML = `
         <div class="r2-top__left">
-          <button class="r2-top__menu" id="r2-top-menu" title="Menu">${ICONS.menu}</button>
+          <button class="r2-top__menu" id="r2-top-menu" title="Menu" aria-label="Abrir/fechar menu lateral" aria-controls="r2-side-main">${ICONS.menu}</button>
           <nav class="r2-crumbs">${crumbsHtml}</nav>
         </div>
         <div class="r2-top__right">
           <div class="r2-search">
             ${ICONS.search}
-            <input placeholder="Buscar lançamento, conta, contrato…" id="r2-search-global">
+            <input placeholder="Buscar lançamento, conta, contrato…" id="r2-search-global" aria-label="Buscar global">
           </div>
-          <button class="r2-icon-btn" id="r2-bell" title="Notificações">${ICONS.bell}</button>
+          <button class="r2-icon-btn" id="r2-bell" title="Notificações" aria-label="Abrir notificações" aria-haspopup="true" aria-expanded="false">${ICONS.bell}</button>
         </div>
       `;
 
@@ -421,11 +451,15 @@
     if (dd) {
       dd.remove();
       document.removeEventListener('click', R2A._closeNotifOnOutside);
+      anchor.setAttribute('aria-expanded', 'false');
       return;
     }
     dd = document.createElement('div');
     dd.id = 'r2-notif-dropdown';
     dd.className = 'r2-notif-dropdown';
+    dd.setAttribute('role', 'dialog');
+    dd.setAttribute('aria-label', 'Notificações');
+    anchor.setAttribute('aria-expanded', 'true');
     const rect = anchor.getBoundingClientRect();
     dd.style.position = 'fixed';
     dd.style.top = (rect.bottom + 8) + 'px';
@@ -469,17 +503,70 @@
   };
 
   // ESC global · fecha modais, sidebar mobile e dropdown de notificações
+  // TAB · prende foco dentro do modal aberto (focus trap acessível)
+  function getFocusableIn(container) {
+    return Array.from(container.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(el => el.offsetParent !== null);
+  }
+  function getOpenModal() {
+    return document.querySelector('.r2-modal-backdrop.is-open, .r2a-modal-backdrop.open');
+  }
   document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    document.querySelectorAll('.r2-modal-backdrop.is-open, .r2a-modal-backdrop.open').forEach(m => {
-      m.classList.remove('is-open');
-      m.classList.remove('open');
-    });
-    const sd = document.querySelector('.r2a-sidebar.is-open, .r2-side.is-open');
-    if (sd) { sd.classList.remove('is-open'); R2A._toggleSideBackdrop && R2A._toggleSideBackdrop(false); }
-    const dd = document.getElementById('r2-notif-dropdown');
-    if (dd) { dd.remove(); document.removeEventListener('click', R2A._closeNotifOnOutside); }
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.r2-modal-backdrop.is-open, .r2a-modal-backdrop.open').forEach(m => {
+        m.classList.remove('is-open');
+        m.classList.remove('open');
+      });
+      const sd = document.querySelector('.r2a-sidebar.is-open, .r2-side.is-open');
+      if (sd) { sd.classList.remove('is-open'); R2A._toggleSideBackdrop && R2A._toggleSideBackdrop(false); }
+      const dd = document.getElementById('r2-notif-dropdown');
+      if (dd) {
+        dd.remove();
+        document.removeEventListener('click', R2A._closeNotifOnOutside);
+        const bell = document.getElementById('r2-bell');
+        if (bell) bell.setAttribute('aria-expanded', 'false');
+      }
+      return;
+    }
+    if (e.key === 'Tab') {
+      const modal = getOpenModal();
+      if (!modal) return;
+      const focusables = getFocusableIn(modal);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   });
+
+  // Quando um modal abre, foca no primeiro elemento focável
+  new MutationObserver((mutations) => {
+    mutations.forEach(m => {
+      if (m.attributeName === 'class') {
+        const t = m.target;
+        const aberto = t.classList && (t.classList.contains('is-open') || t.classList.contains('open'));
+        const isBackdrop = t.classList && (t.classList.contains('r2-modal-backdrop') || t.classList.contains('r2a-modal-backdrop'));
+        if (isBackdrop && aberto) {
+          t.setAttribute('role', 'dialog');
+          t.setAttribute('aria-modal', 'true');
+          // Foca no primeiro elemento dentro do modal
+          setTimeout(() => {
+            const focusables = getFocusableIn(t);
+            // Pula o botão de close para focar num campo de input se houver
+            const input = t.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])');
+            (input || focusables[1] || focusables[0])?.focus();
+          }, 50);
+        }
+      }
+    });
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
 
   // Backdrop overlay mobile da sidebar
   R2A._toggleSideBackdrop = function (show) {

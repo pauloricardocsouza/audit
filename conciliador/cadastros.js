@@ -121,8 +121,8 @@
                 <td>${c.numero || '—'}</td>
                 <td class="right">
                   <div class="r2a-row-actions">
-                    <button class="r2a-icon-btn" data-act="edit-conta" data-id="${c.id}" title="Editar">✎</button>
-                    <button class="r2a-icon-btn danger" data-act="del-conta" data-id="${c.id}" title="Excluir">🗑</button>
+                    <button class="r2a-icon-btn" data-act="edit-conta" data-id="${c.id}" title="Editar" aria-label="Editar">✎</button>
+                    <button class="r2a-icon-btn danger" data-act="del-conta" data-id="${c.id}" title="Excluir" aria-label="Excluir">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -317,8 +317,8 @@
                 <td style="color: var(--text-2);">${c.obs || '—'}</td>
                 <td class="right">
                   <div class="r2a-row-actions">
-                    <button class="r2a-icon-btn" data-act="edit-cat" data-id="${c.id}" title="Editar">✎</button>
-                    <button class="r2a-icon-btn danger" data-act="del-cat" data-id="${c.id}" title="Excluir">🗑</button>
+                    <button class="r2a-icon-btn" data-act="edit-cat" data-id="${c.id}" title="Editar" aria-label="Editar">✎</button>
+                    <button class="r2a-icon-btn danger" data-act="del-cat" data-id="${c.id}" title="Excluir" aria-label="Excluir">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -447,8 +447,8 @@
                 <td><span class="pill ${u.perfil}">${u.perfil}</span></td>
                 <td class="right">
                   <div class="r2a-row-actions">
-                    <button class="r2a-icon-btn" data-act="edit-user" data-id="${u.id}" title="Editar">✎</button>
-                    <button class="r2a-icon-btn danger" data-act="del-user" data-id="${u.id}" title="Excluir">🗑</button>
+                    <button class="r2a-icon-btn" data-act="edit-user" data-id="${u.id}" title="Editar" aria-label="Editar">✎</button>
+                    <button class="r2a-icon-btn danger" data-act="del-user" data-id="${u.id}" title="Excluir" aria-label="Excluir">🗑</button>
                   </div>
                 </td>
               </tr>
