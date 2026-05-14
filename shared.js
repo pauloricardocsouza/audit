@@ -161,6 +161,7 @@
   // ----------------------------------------------------------
   const ICONS = {
     home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>',
+    audit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>',
     conciliador: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a2 2 0 0 1 2-2h16"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a2 2 0 0 1-2 2H3"/></svg>',
     contratos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
     chev: '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
@@ -210,6 +211,11 @@
           <a href="${rel('index.html')}" class="r2-side__item ${active.dashboardGeral ? 'is-active' : ''}">
             ${ICONS.home}<span>Dashboard geral</span>
           </a>
+          ${u.perfil === 'admin' ? `
+            <a href="${rel('auditoria.html')}" class="r2-side__item ${active.auditoria ? 'is-active' : ''}">
+              ${ICONS.audit}<span>Auditoria</span>
+            </a>
+          ` : ''}
 
           <div class="r2-side__group">Módulos</div>
 
@@ -266,6 +272,7 @@
       topbar.className = (topbar.className.replace(/(^|\s)(r2a-topbar|r2-top)(\s|$)/g, ' ').trim() + ' r2-top r2a-topbar').trim();
       const crumbs = [];
       if (active.dashboardGeral) crumbs.push({ label: 'Dashboard geral', last: true });
+      else if (active.auditoria) crumbs.push({ label: 'Auditoria', last: true });
       else if (active.modulo) {
         const m = CFG.MODULOS.find(x => x.id === active.modulo);
         if (m) {
@@ -384,15 +391,23 @@
   };
 
   R2A.auditar = async function (acao, detalhes = {}) {
+    const u = R2A.session.user();
     const log = {
       acao,
-      usuario_uid: R2A.session.user().uid,
-      usuario_nome: R2A.session.user().nome,
+      usuario_uid: u.uid,
+      usuario_nome: u.nome,
+      usuario_perfil: u.perfil,
       ts: new Date().toISOString(),
-      ...detalhes
+      detalhes: detalhes || {}
     };
-    if (CFG.MODO_DEV) { console.info('[AUDIT]', log); return; }
-    try { await _db.collection(CFG.COLLECTIONS.AUDITORIA).add(log); } catch (e) { console.error('[R2A] Audit:', e); }
+    if (CFG.MODO_DEV) {
+      console.info('[AUDIT]', log);
+      try { await R2A.data.add(CFG.COLLECTIONS.AUDITORIA, log); }
+      catch (e) { /* silencioso em DEV: localStorage pode falhar por quota */ }
+      return;
+    }
+    try { await _db.collection(CFG.COLLECTIONS.AUDITORIA).add(log); }
+    catch (e) { console.error('[R2A] Audit:', e); }
   };
 
   R2A.$ = (s, r = document) => r.querySelector(s);

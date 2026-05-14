@@ -74,18 +74,87 @@
     return { banco, sia };
   }
 
-  // -------- RENDER --------
+  // -------- RENDER · VIRTUALIZAÇÃO --------
+  // Render por janela (windowing): só renderiza ~50 linhas visíveis + buffer
+  // Permite escalar para 10k+ lançamentos sem travar o browser.
+  // Mantém scroll natural via spacers de altura calculada nos extremos.
+  const ROW_HEIGHT = 42;          // altura média de uma <tr> com padding D2
+  const VIRT_BUFFER = 20;         // linhas extras renderizadas antes/depois da viewport
+  const VIRT_THRESHOLD = 200;     // lista menor que isso renderiza inteira (mais simples)
+  const VState = {
+    banco: { lista: [], _rafPending: false },
+    sia:   { lista: [], _rafPending: false }
+  };
+
+  function renderTbodyVirtual(side, list) {
+    VState[side].lista = list;
+    const tbody = document.getElementById('tbody-' + side);
+    if (!tbody) return;
+    const scroller = tbody.closest('.r2a-panel-body');
+    if (!scroller) {
+      tbody.innerHTML = list.map(r => rowHTML(r, side)).join('');
+      return;
+    }
+
+    if (list.length === 0) {
+      const icon = side === 'banco' ? '⬢' : '◆';
+      const txt = side === 'banco' ? 'bancário' : 'do SIA';
+      tbody.innerHTML = `<tr><td colspan="5" class="empty"><div class="empty-icon">${icon}</div>Nenhum lançamento ${txt} no filtro</td></tr>`;
+      return;
+    }
+
+    // Pequenas listas: renderiza tudo (zero overhead de scroll)
+    if (list.length <= VIRT_THRESHOLD) {
+      tbody.innerHTML = list.map(r => rowHTML(r, side)).join('');
+      return;
+    }
+
+    // Windowing
+    const scrollTop = scroller.scrollTop;
+    const viewportH = scroller.clientHeight || 480;
+    const startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - VIRT_BUFFER);
+    const visibleCount = Math.ceil(viewportH / ROW_HEIGHT) + (VIRT_BUFFER * 2);
+    const endIdx = Math.min(list.length, startIdx + visibleCount);
+
+    const topPad = startIdx * ROW_HEIGHT;
+    const bottomPad = (list.length - endIdx) * ROW_HEIGHT;
+
+    let html = '';
+    if (topPad > 0) html += `<tr class="r2a-virt-spacer" aria-hidden="true" style="height:${topPad}px"><td colspan="5" style="padding:0;border:0;"></td></tr>`;
+    for (let i = startIdx; i < endIdx; i++) html += rowHTML(list[i], side);
+    if (bottomPad > 0) html += `<tr class="r2a-virt-spacer" aria-hidden="true" style="height:${bottomPad}px"><td colspan="5" style="padding:0;border:0;"></td></tr>`;
+
+    tbody.innerHTML = html;
+  }
+
+  function bindVirtualScroll() {
+    document.querySelectorAll('.r2a-panel-body').forEach(panel => {
+      panel.addEventListener('scroll', () => {
+        const tbody = panel.querySelector('tbody');
+        if (!tbody || !tbody.id || !tbody.id.startsWith('tbody-')) return;
+        const side = tbody.id.replace('tbody-', '');
+        if (!VState[side]) return;
+        const lista = VState[side].lista;
+        if (lista.length <= VIRT_THRESHOLD) return; // não há janela ativa
+
+        if (VState[side]._rafPending) return;
+        VState[side]._rafPending = true;
+        requestAnimationFrame(() => {
+          VState[side]._rafPending = false;
+          renderTbodyVirtual(side, lista);
+        });
+      }, { passive: true });
+    });
+  }
+
   function renderAll() {
     const { banco, sia } = getFiltered();
 
     document.getElementById('badge-banco').textContent = `${banco.length} lançamentos`;
     document.getElementById('badge-sia').textContent = `${sia.length} lançamentos`;
 
-    document.getElementById('tbody-banco').innerHTML = banco.map(r => rowHTML(r, 'banco')).join('') ||
-      `<tr><td colspan="5" class="empty"><div class="empty-icon">⬢</div>Nenhum lançamento bancário no filtro</td></tr>`;
-
-    document.getElementById('tbody-sia').innerHTML = sia.map(r => rowHTML(r, 'sia')).join('') ||
-      `<tr><td colspan="5" class="empty"><div class="empty-icon">◆</div>Nenhum lançamento do SIA no filtro</td></tr>`;
+    renderTbodyVirtual('banco', banco);
+    renderTbodyVirtual('sia', sia);
 
     renderStats(banco, sia);
     renderSelectionInfo();
@@ -546,6 +615,7 @@
     R2A.renderFooter();
     await carregarDados();
     wire();
+    bindVirtualScroll();
     renderAll();
   });
 

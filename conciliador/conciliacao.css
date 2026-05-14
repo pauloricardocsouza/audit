@@ -294,6 +294,8 @@
 .tbl tbody tr.conciliated { background: var(--ok-soft); }
 .tbl tbody tr.ignored { opacity: 0.55; }
 .tbl tbody tr.ambiguous { background: var(--ambig-soft); }
+.tbl tbody tr.r2a-virt-spacer { pointer-events: none; background: transparent !important; }
+.tbl tbody tr.r2a-virt-spacer td { padding: 0 !important; border: 0 !important; }
 
 .tbl .row-check { width: 28px; text-align: center; }
 .tbl .row-check input { cursor: pointer; }
