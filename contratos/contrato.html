@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contrato · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.25">
-<link rel="stylesheet" href="../shared.css?v=0.25">
-<link rel="stylesheet" href="contratos.css?v=0.25">
+<link rel="stylesheet" href="../styles/theme.css?v=0.26">
+<link rel="stylesheet" href="../shared.css?v=0.26">
+<link rel="stylesheet" href="contratos.css?v=0.26">
 <style>
   .parcela-acoes { display: flex; gap: 4px; justify-content: center; }
   .parcela-acoes .btn-sm { padding: 3px 8px; font-size: 10px; }
@@ -80,11 +80,15 @@
   </div>
 </div>
 
-<script src="../config.js?v=0.25"></script>
-<script src="../shared.js?v=0.25"></script>
-<script src="../mock-data.js?v=0.25"></script>
-<script src="../data.js?v=0.25"></script>
-<script src="contratos.js?v=0.25"></script>
+<!-- jsPDF para exportação do relatório do contrato -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
+
+<script src="../config.js?v=0.26"></script>
+<script src="../shared.js?v=0.26"></script>
+<script src="../mock-data.js?v=0.26"></script>
+<script src="../data.js?v=0.26"></script>
+<script src="contratos.js?v=0.26"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
@@ -293,11 +297,12 @@
           </div>
           <div class="ct-page-actions">
             <a href="contratos.html" class="btn btn-ghost">← Voltar</a>
+            <button class="btn" id="btn-export-pdf" title="Gerar relatório consolidado do contrato em PDF">⤓ Relatório PDF</button>
             ${(function () {
               const p = c.pdf_original;
               if (!p) return '<button class="btn" disabled title="Nenhum PDF anexado">⤓ Sem PDF</button>';
               const tamanho = p.tamanho_kb ? ` · ${(p.tamanho_kb / 1024).toFixed(1)} MB` : '';
-              if (p.url) return `<a href="${p.url}" download="${p.nome}" class="btn btn-primary" title="${p.nome}${tamanho}">⤓ Baixar PDF</a>`;
+              if (p.url) return `<a href="${p.url}" download="${p.nome}" class="btn btn-primary" title="${p.nome}${tamanho}">⤓ PDF original</a>`;
               return `<button class="btn" disabled title="Arquivo: ${p.nome}${tamanho} · ainda não anexado (Fase 5)">⤓ ${p.nome}</button>`;
             })()}
           </div>
@@ -478,6 +483,172 @@
       `;
 
       document.getElementById('btn-auto-vinc').addEventListener('click', autoVincular);
+      const btnExp = document.getElementById('btn-export-pdf');
+      if (btnExp) btnExp.addEventListener('click', () => exportarPDF(c, parcelas));
+    }
+
+    // ------------------------------------------------------------
+    // EXPORTAR RELATÓRIO PDF DO CONTRATO
+    // ------------------------------------------------------------
+    function exportarPDF(c, parcelas) {
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        R2A.toast('jsPDF não carregou · recarregue a página', 'error');
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', format: 'a4' });
+      const NAVY = [26, 58, 82];
+      const INK = [15, 23, 42];
+      const MUTE = [100, 116, 139];
+      const OK = [22, 163, 74];
+      const ERR = [220, 38, 38];
+      const WARN = [217, 119, 6];
+
+      // Header navy gradient (simulado com retângulo cheio)
+      doc.setFillColor(...NAVY);
+      doc.rect(0, 0, 210, 36, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8.5);
+      doc.text('R2 AUDIT · PLATAFORMA DE AUDITORIA', 14, 11);
+      doc.setFontSize(15);
+      doc.setFont(undefined, 'bold');
+      doc.text('Relatório do contrato', 14, 21);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.text(`${c.banco} · ${c.numero_contrato}`, 14, 29);
+
+      // Resumo / KPIs
+      doc.setTextColor(...INK);
+      let y = 46;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Identificação', 14, y);
+      y += 5;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+
+      const tomador = c.tomador || {};
+      const taxa = R2A.contratos.fmtTaxa(c.taxa_juros);
+      const sistema = R2A.contratos.fmtSistema(c.estrutura.sistema_amortizacao_detectado);
+      const cet = c.taxa_juros.cet_aa ? (c.taxa_juros.cet_aa * 100).toFixed(4) + '% a.a.' : '—';
+
+      const linhas = [
+        ['Tomador', tomador.razao_social || '—', 'CNPJ', tomador.cnpj || '—'],
+        ['Produto', R2A.contratos.fmtProduto(c.produto), 'Sistema', sistema],
+        ['Principal', R2A.fmt.moeda(c.valores.principal, { sinal: false }), 'Líquido liberado', c.valores.liquido_liberado ? R2A.fmt.moeda(c.valores.liquido_liberado, { sinal: false }) : '—'],
+        ['IOF', c.valores.iof ? R2A.fmt.moeda(c.valores.iof, { sinal: false }) : '—', 'Tarifas', c.valores.tarifas ? R2A.fmt.moeda(c.valores.tarifas, { sinal: false }) : '—'],
+        ['Emissão', R2A.fmt.data(c.datas.emissao), '1ª parcela', R2A.fmt.data(c.datas.primeira_parcela)],
+        ['Prazo', `${c.estrutura.prazo_meses} meses`, 'Carência', `${c.estrutura.carencia.meses} meses`],
+        ['Taxa', taxa, 'CET', cet],
+        ['Conta débito', `${c.conta_debito.banco || ''} ag. ${c.conta_debito.agencia || '—'} c/c ${c.conta_debito.numero || '—'}`, 'Estado', c.estado]
+      ];
+
+      linhas.forEach(([k1, v1, k2, v2]) => {
+        doc.setTextColor(...MUTE);
+        doc.text(k1, 14, y);
+        doc.text(k2, 110, y);
+        doc.setTextColor(...INK);
+        doc.text(String(v1).slice(0, 60), 44, y);
+        doc.text(String(v2).slice(0, 60), 140, y);
+        y += 5;
+      });
+
+      // Sumário do cumprimento
+      y += 4;
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(10);
+      doc.text('Cumprimento', 14, y);
+      y += 5;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      const totalAmort = parcelas.filter(p => p.tipo !== 'carencia' && p.valor > 0).length;
+      const pagas = parcelas.filter(p => p.status === 'pago' || p.status === 'pago_maior' || p.status === 'pago_menor').length;
+      const atrasos = parcelas.filter(p => p.status === 'atraso').length;
+      const valorPrev = parcelas.reduce((s, p) => s + (p.valor || 0), 0);
+      const valorPago = parcelas.reduce((s, p) => s + (p.pago ? p.pago.valor : 0), 0);
+      const pct = totalAmort > 0 ? Math.round((pagas / totalAmort) * 100) : 0;
+
+      doc.setTextColor(...MUTE);
+      doc.text('Pagas / total', 14, y);
+      doc.text('Em atraso', 70, y);
+      doc.text('Pago acumulado', 120, y);
+      doc.text('Previsto total', 170, y);
+      doc.setTextColor(...INK);
+      doc.setFont(undefined, 'bold');
+      y += 5;
+      doc.text(`${pagas} / ${totalAmort}  (${pct}%)`, 14, y);
+      doc.setTextColor(atrasos > 0 ? ERR[0] : INK[0], atrasos > 0 ? ERR[1] : INK[1], atrasos > 0 ? ERR[2] : INK[2]);
+      doc.text(`${atrasos}`, 70, y);
+      doc.setTextColor(...INK);
+      doc.text(R2A.fmt.moeda(valorPago, { sinal: false }), 120, y);
+      doc.text(R2A.fmt.moeda(valorPrev, { sinal: false }), 170, y);
+      doc.setFont(undefined, 'normal');
+      y += 8;
+
+      // Tabela do cronograma
+      const body = parcelas.map(p => {
+        const statusLabel = {
+          'pago': 'pago',
+          'pago_menor': 'pago a menor',
+          'pago_maior': 'pago a maior',
+          'atraso': 'em atraso',
+          'aberta': 'aberta',
+          'carencia': 'carência'
+        }[p.status] || p.status;
+        return [
+          String(p.n),
+          R2A.fmt.data(p.vencimento),
+          p.valor > 0 ? R2A.fmt.moeda(p.valor, { sinal: false }) : '—',
+          p.pago ? R2A.fmt.moeda(p.pago.valor, { sinal: false }) : '—',
+          p.pago && p.pago.diferenca ? (p.pago.diferenca > 0 ? '+' : '') + R2A.fmt.moeda(p.pago.diferenca, { sinal: false }) : '—',
+          statusLabel
+        ];
+      });
+
+      doc.autoTable({
+        startY: y,
+        head: [['#', 'Vencimento', 'Esperado', 'Pago', 'Diferença', 'Status']],
+        body,
+        theme: 'grid',
+        headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontSize: 8.5, fontStyle: 'bold' },
+        bodyStyles: { fontSize: 8, textColor: INK, lineColor: [226, 232, 240] },
+        alternateRowStyles: { fillColor: [245, 248, 251] },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 12 },
+          1: { cellWidth: 28 },
+          2: { halign: 'right', cellWidth: 30 },
+          3: { halign: 'right', cellWidth: 30 },
+          4: { halign: 'right', cellWidth: 30 },
+          5: { cellWidth: 32, fontStyle: 'bold' }
+        },
+        didParseCell: function (data) {
+          if (data.section === 'body' && data.column.index === 5) {
+            const v = data.cell.raw;
+            if (v === 'em atraso') data.cell.styles.textColor = ERR;
+            else if (v === 'pago') data.cell.styles.textColor = OK;
+            else if (v === 'pago a menor') data.cell.styles.textColor = WARN;
+            else if (v === 'carência') data.cell.styles.textColor = MUTE;
+          }
+        },
+        margin: { left: 14, right: 14 }
+      });
+
+      // Footer com paginação
+      const pageCount = doc.internal.getNumberOfPages();
+      const u = R2A.session.user();
+      const ts = new Date().toLocaleString('pt-BR');
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(...MUTE);
+        doc.text(`Gerado em ${ts} por ${u.nome} · R2 Audit v${R2A_CONFIG.APP_VERSION}`, 14, 290);
+        doc.text(`Página ${i} de ${pageCount}`, 196, 290, { align: 'right' });
+      }
+
+      const nome = `Contrato_${(c.numero_contrato || c.id).replace(/[^\w]/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(nome);
+      R2A.auditar('contrato.exportar_pdf', { contratoId: c.id, numero: c.numero_contrato });
+      R2A.toast('Relatório PDF gerado', 'success');
     }
 
     render();

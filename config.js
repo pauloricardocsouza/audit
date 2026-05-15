@@ -3,7 +3,7 @@
 // ============================================================
 window.R2A_CONFIG = {
   APP_NAME: 'R2 Audit',
-  APP_VERSION: '0.25',
+  APP_VERSION: '0.26',
   COMPANY: 'R2 SOLUÇÕES EMPRESARIAIS',
   DOMAIN: 'audit.solucoesr2.com.br',
 

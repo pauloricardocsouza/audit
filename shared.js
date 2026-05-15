@@ -568,6 +568,90 @@
     }
   };
 
+  // Atalhos globais de teclado
+  // "/"      foca busca global no topbar
+  // "?"      abre painel de atalhos
+  // ESC      fecha modais, sidebar mobile, dropdown notificações
+  // TAB      prende foco dentro do modal aberto (focus trap)
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+  }
+
+  R2A._showAjudaAtalhos = function () {
+    let bd = document.getElementById('r2-atalhos-bd');
+    if (bd) { bd.remove(); return; }
+    bd = document.createElement('div');
+    bd.id = 'r2-atalhos-bd';
+    bd.className = 'r2-modal-backdrop is-open';
+    bd.setAttribute('role', 'dialog');
+    bd.setAttribute('aria-modal', 'true');
+    bd.setAttribute('aria-label', 'Atalhos de teclado');
+    bd.innerHTML = `
+      <div class="r2-modal" style="max-width: 460px;">
+        <div class="r2-modal__head">
+          <h3 class="r2-modal__title">Atalhos de teclado</h3>
+          <button class="r2-modal__close" aria-label="Fechar">✕</button>
+        </div>
+        <div class="r2-modal__body">
+          <table style="width:100%; font-size:13px; border-collapse:collapse;">
+            <tbody>
+              <tr><td style="padding:8px 0; color:var(--ink-3);">Foco na busca global</td><td style="text-align:right;"><kbd>/</kbd></td></tr>
+              <tr><td style="padding:8px 0; color:var(--ink-3);">Mostrar esta ajuda</td><td style="text-align:right;"><kbd>?</kbd></td></tr>
+              <tr><td style="padding:8px 0; color:var(--ink-3);">Fechar modal / dropdown / sidebar</td><td style="text-align:right;"><kbd>Esc</kbd></td></tr>
+              <tr><td style="padding:8px 0; color:var(--ink-3);">Navegar entre campos do modal</td><td style="text-align:right;"><kbd>Tab</kbd></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="r2-modal__foot">
+          <button class="r2-btn r2-btn--ghost" id="r2-atalhos-ok">Fechar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(bd);
+    bd.querySelector('.r2-modal__close').addEventListener('click', () => bd.remove());
+    bd.querySelector('#r2-atalhos-ok').addEventListener('click', () => bd.remove());
+    bd.addEventListener('click', e => { if (e.target === bd) bd.remove(); });
+  };
+
+  document.addEventListener('keydown', function (e) {
+    // "/" foca a busca global se não estiver digitando
+    if (e.key === '/' && !isTypingTarget(e.target)) {
+      const search = document.getElementById('r2-search-global');
+      if (search) {
+        e.preventDefault();
+        search.focus();
+      }
+      return;
+    }
+    // "?" abre a ajuda de atalhos
+    if (e.key === '?' && !isTypingTarget(e.target)) {
+      e.preventDefault();
+      R2A._showAjudaAtalhos();
+      return;
+    }
+  });
+
+  // CSS inline para <kbd> dentro do modal de atalhos
+  if (!document.getElementById('r2-kbd-style')) {
+    const s = document.createElement('style');
+    s.id = 'r2-kbd-style';
+    s.textContent = `
+      kbd {
+        font-family: var(--font-mono, monospace);
+        font-size: 11.5px;
+        padding: 2px 8px;
+        background: var(--navy-tint, #f5f8fb);
+        border: 1px solid var(--line, #e2e8f0);
+        border-radius: 4px;
+        color: var(--ink-1, #0f172a);
+        font-weight: 600;
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
   // ESC global · fecha modais, sidebar mobile e dropdown de notificações
   // TAB · prende foco dentro do modal aberto (focus trap acessível)
   function getFocusableIn(container) {
