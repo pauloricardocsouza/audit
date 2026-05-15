@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Auditoria · R2 Audit</title>
-<link rel="stylesheet" href="styles/theme.css?v=0.26">
-<link rel="stylesheet" href="shared.css?v=0.26">
+<link rel="stylesheet" href="styles/theme.css?v=0.27">
+<link rel="stylesheet" href="shared.css?v=0.27">
 <style>
   .aud-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
   .aud-head h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
@@ -219,10 +219,10 @@
   </div>
 </div>
 
-<script src="config.js?v=0.26"></script>
-<script src="shared.js?v=0.26"></script>
-<script src="mock-data.js?v=0.26"></script>
-<script src="data.js?v=0.26"></script>
+<script src="config.js?v=0.27"></script>
+<script src="shared.js?v=0.27"></script>
+<script src="mock-data.js?v=0.27"></script>
+<script src="data.js?v=0.27"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ auditoria: true });
@@ -281,10 +281,20 @@
       }
 
       async function carregar() {
+        document.getElementById('tbody-aud').innerHTML = R2A.skeleton.rows(6, ['w-8','w-15','w-20','w-15','w-30']);
         State.eventos = await R2A.data.list(R2A_CONFIG.COLLECTIONS.AUDITORIA);
         // Mais recentes primeiro
         State.eventos.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
         popularFiltros();
+        // Restaurar filtros persistidos antes de aplicar
+        const f = R2A.filtros.load('auditoria', null);
+        if (f) {
+          if (f.ini)  document.getElementById('f-ini').value  = f.ini;
+          if (f.fim)  document.getElementById('f-fim').value  = f.fim;
+          if (f.user) document.getElementById('f-user').value = f.user;
+          if (f.acao) document.getElementById('f-acao').value = f.acao;
+          if (f.q)    document.getElementById('f-busca').value = f.q;
+        }
         aplicarFiltros();
       }
 
@@ -303,6 +313,8 @@
         const user = document.getElementById('f-user').value;
         const acao = document.getElementById('f-acao').value;
         const q = (document.getElementById('f-busca').value || '').toLowerCase().trim();
+        // Persiste entre visitas
+        R2A.filtros.save('auditoria', { ini, fim, user, acao, q });
 
         State.filtered = State.eventos.filter(e => {
           const data = (e.ts || '').slice(0, 10);
@@ -451,6 +463,7 @@
         ['f-ini', 'f-fim', 'f-busca'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('f-user').value = 'all';
         document.getElementById('f-acao').value = 'all';
+        R2A.filtros.clear('auditoria');
         aplicarFiltros();
       });
       document.getElementById('btn-load-more').addEventListener('click', () => {

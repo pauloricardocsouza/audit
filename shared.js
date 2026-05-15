@@ -374,6 +374,25 @@
   };
 
   // ----------------------------------------------------------
+  // SKELETONS · helpers para loading states em listas
+  // ----------------------------------------------------------
+  R2A.skeleton = {
+    // Linhas de tabela com colunas de larguras variadas
+    rows(count = 5, cols = ['w-30', 'w-20', 'w-15', 'w-15', 'w-10']) {
+      const colspan = cols.length || 5;
+      return Array.from({ length: count }).map(() =>
+        `<tr><td colspan="${colspan}" style="padding:0;border:0;"><div class="r2-skeleton-row">${
+          cols.map(w => `<span class="r2-skeleton ${w}">·</span>`).join('')
+        }</div></td></tr>`
+      ).join('');
+    },
+    // Linha única (útil para detalhes)
+    line(width = '100%', height = '12px') {
+      return `<span class="r2-skeleton" style="display:block;width:${width};height:${height};"> </span>`;
+    }
+  };
+
+  // ----------------------------------------------------------
   // FILTROS PERSISTENTES (por scope no localStorage)
   // ----------------------------------------------------------
   R2A.filtros = {
@@ -589,18 +608,34 @@
     bd.setAttribute('aria-modal', 'true');
     bd.setAttribute('aria-label', 'Atalhos de teclado');
     bd.innerHTML = `
-      <div class="r2-modal" style="max-width: 460px;">
+      <div class="r2-modal" style="max-width: 480px;">
         <div class="r2-modal__head">
           <h3 class="r2-modal__title">Atalhos de teclado</h3>
           <button class="r2-modal__close" aria-label="Fechar">✕</button>
         </div>
         <div class="r2-modal__body">
+          <div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.10em; margin-bottom: 8px;">Ações</div>
+          <table style="width:100%; font-size:13px; border-collapse:collapse; margin-bottom: 14px;">
+            <tbody>
+              <tr><td style="padding:6px 0; color:var(--ink-3);">Foco na busca global</td><td style="text-align:right;"><kbd>/</kbd></td></tr>
+              <tr><td style="padding:6px 0; color:var(--ink-3);">Mostrar esta ajuda</td><td style="text-align:right;"><kbd>?</kbd></td></tr>
+              <tr><td style="padding:6px 0; color:var(--ink-3);">Fechar modal / dropdown / sidebar</td><td style="text-align:right;"><kbd>Esc</kbd></td></tr>
+              <tr><td style="padding:6px 0; color:var(--ink-3);">Navegar entre campos do modal</td><td style="text-align:right;"><kbd>Tab</kbd></td></tr>
+            </tbody>
+          </table>
+          <div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.10em; margin-bottom: 8px;">Navegação rápida (sequência)</div>
           <table style="width:100%; font-size:13px; border-collapse:collapse;">
             <tbody>
-              <tr><td style="padding:8px 0; color:var(--ink-3);">Foco na busca global</td><td style="text-align:right;"><kbd>/</kbd></td></tr>
-              <tr><td style="padding:8px 0; color:var(--ink-3);">Mostrar esta ajuda</td><td style="text-align:right;"><kbd>?</kbd></td></tr>
-              <tr><td style="padding:8px 0; color:var(--ink-3);">Fechar modal / dropdown / sidebar</td><td style="text-align:right;"><kbd>Esc</kbd></td></tr>
-              <tr><td style="padding:8px 0; color:var(--ink-3);">Navegar entre campos do modal</td><td style="text-align:right;"><kbd>Tab</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Dashboard geral</td><td style="text-align:right;"><kbd>g</kbd> <kbd>h</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Dashboard Conciliador</td><td style="text-align:right;"><kbd>g</kbd> <kbd>d</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Conciliação</td><td style="text-align:right;"><kbd>g</kbd> <kbd>x</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Relatórios</td><td style="text-align:right;"><kbd>g</kbd> <kbd>r</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Fechamento de período</td><td style="text-align:right;"><kbd>g</kbd> <kbd>p</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Cadastros</td><td style="text-align:right;"><kbd>g</kbd> <kbd>k</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Contratos (lista)</td><td style="text-align:right;"><kbd>g</kbd> <kbd>c</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Importar contrato</td><td style="text-align:right;"><kbd>g</kbd> <kbd>u</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Simulador</td><td style="text-align:right;"><kbd>g</kbd> <kbd>s</kbd></td></tr>
+              <tr><td style="padding:5px 0; color:var(--ink-3);">Auditoria (admin)</td><td style="text-align:right;"><kbd>g</kbd> <kbd>a</kbd></td></tr>
             </tbody>
           </table>
         </div>
@@ -613,6 +648,22 @@
     bd.querySelector('.r2-modal__close').addEventListener('click', () => bd.remove());
     bd.querySelector('#r2-atalhos-ok').addEventListener('click', () => bd.remove());
     bd.addEventListener('click', e => { if (e.target === bd) bd.remove(); });
+  };
+
+  // Buffer para sequência `g <letra>` (navegação rápida)
+  let gBuffer = '';
+  let gTimer = null;
+  const GO_MAP = {
+    'h': 'index.html',                       // Home
+    'a': 'auditoria.html',                   // Auditoria
+    'c': 'contratos/contratos.html',         // Contratos
+    'd': 'conciliador/dashboard.html',       // Dashboard Conciliador
+    'x': 'conciliador/conciliacao.html',     // Conciliação
+    'r': 'conciliador/relatorios.html',      // Relatórios
+    'p': 'conciliador/periodos.html',        // Períodos (fechamento)
+    'k': 'conciliador/cadastros.html',       // Cadastros
+    's': 'contratos/simulador.html',         // Simulador
+    'u': 'contratos/upload.html'             // Upload contrato
   };
 
   document.addEventListener('keydown', function (e) {
@@ -630,6 +681,23 @@
       e.preventDefault();
       R2A._showAjudaAtalhos();
       return;
+    }
+    // Sequência "g <letra>" para navegação rápida
+    if (isTypingTarget(e.target)) return;
+    if (e.key === 'g' && !gBuffer) {
+      gBuffer = 'g';
+      if (gTimer) clearTimeout(gTimer);
+      gTimer = setTimeout(() => { gBuffer = ''; }, 1500);
+      return;
+    }
+    if (gBuffer === 'g') {
+      if (gTimer) clearTimeout(gTimer);
+      gBuffer = '';
+      const dest = GO_MAP[e.key.toLowerCase()];
+      if (dest) {
+        e.preventDefault();
+        window.location.href = rel(dest);
+      }
     }
   });
 

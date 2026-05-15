@@ -441,9 +441,21 @@
       });
     });
 
-    // Filtros
+    // Filtros · persistem entre visitas
+    function salvarFiltros() {
+      R2A.filtros.save('relatorios', {
+        tipo: State.tipo,
+        conta: document.getElementById('rel-conta').value,
+        ini: document.getElementById('rel-ini').value,
+        fim: document.getElementById('rel-fim').value,
+        status: document.getElementById('rel-status').value
+      });
+    }
     ['rel-conta', 'rel-ini', 'rel-fim', 'rel-status'].forEach(id => {
-      document.getElementById(id).addEventListener('change', renderPreview);
+      document.getElementById(id).addEventListener('change', () => { salvarFiltros(); renderPreview(); });
+    });
+    document.querySelectorAll('.r2c-rel-type, .r2a-rel-type').forEach(el => {
+      el.addEventListener('click', () => { setTimeout(salvarFiltros, 0); });
     });
 
     // Exportações
@@ -484,6 +496,20 @@
     R2A.data.init();
     wire();
     await carregar();
+    // Restaurar filtros persistidos
+    const f = R2A.filtros.load('relatorios', null);
+    if (f) {
+      if (f.tipo) {
+        State.tipo = f.tipo;
+        document.querySelectorAll('.r2c-rel-type, .r2a-rel-type').forEach(el => {
+          el.classList.toggle('active', el.dataset.tipo === f.tipo);
+        });
+      }
+      if (f.conta)   document.getElementById('rel-conta').value = f.conta;
+      if (f.ini)     document.getElementById('rel-ini').value = f.ini;
+      if (f.fim)     document.getElementById('rel-fim').value = f.fim;
+      if (f.status)  document.getElementById('rel-status').value = f.status;
+    }
     renderPreview();
   });
 

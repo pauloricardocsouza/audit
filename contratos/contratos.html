@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contratos · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.26">
-<link rel="stylesheet" href="../shared.css?v=0.26">
-<link rel="stylesheet" href="contratos.css?v=0.26">
+<link rel="stylesheet" href="../styles/theme.css?v=0.27">
+<link rel="stylesheet" href="../shared.css?v=0.27">
+<link rel="stylesheet" href="contratos.css?v=0.27">
 </head>
 <body>
 
@@ -57,7 +57,7 @@
                   <th class="center">Estado</th>
                 </tr>
               </thead>
-              <tbody id="tbody"></tbody>
+              <tbody id="tbody"><!-- skeleton no init --></tbody>
             </table>
           </div>
         </div>
@@ -69,11 +69,11 @@
   </div>
 </div>
 
-<script src="../config.js?v=0.26"></script>
-<script src="../shared.js?v=0.26"></script>
-<script src="../mock-data.js?v=0.26"></script>
-<script src="../data.js?v=0.26"></script>
-<script src="contratos.js?v=0.26"></script>
+<script src="../config.js?v=0.27"></script>
+<script src="../shared.js?v=0.27"></script>
+<script src="../mock-data.js?v=0.27"></script>
+<script src="../data.js?v=0.27"></script>
+<script src="contratos.js?v=0.27"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
@@ -126,6 +126,8 @@
     }
 
     (async function () {
+      // Skeleton enquanto carrega
+      document.getElementById('tbody').innerHTML = R2A.skeleton.rows(5, ['w-30','w-15','w-15','w-10','w-10','w-10','w-15','w-10']);
       todos = await R2A.contratos.list();
       // Restaura filtros salvos
       const persistidos = R2A.filtros.load('contratos_lista', { q: '', estado: 'all' });
