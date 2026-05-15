@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Auditoria · R2 Audit</title>
-<link rel="stylesheet" href="styles/theme.css?v=0.27">
-<link rel="stylesheet" href="shared.css?v=0.27">
+<link rel="stylesheet" href="styles/theme.css?v=0.28">
+<link rel="stylesheet" href="shared.css?v=0.28">
 <style>
   .aud-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
   .aud-head h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
@@ -219,10 +219,10 @@
   </div>
 </div>
 
-<script src="config.js?v=0.27"></script>
-<script src="shared.js?v=0.27"></script>
-<script src="mock-data.js?v=0.27"></script>
-<script src="data.js?v=0.27"></script>
+<script src="config.js?v=0.28"></script>
+<script src="shared.js?v=0.28"></script>
+<script src="mock-data.js?v=0.28"></script>
+<script src="data.js?v=0.28"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ auditoria: true });
@@ -378,7 +378,23 @@
         // Tabela
         const tbody = document.getElementById('tbody-aud');
         if (lista.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" style="padding: 40px; text-align: center; color: var(--ink-4);">Nenhum evento encontrado para os filtros aplicados.</td></tr>`;
+          const temEventos = State.eventos.length > 0;
+          const empty = temEventos
+            ? R2A.emptyState({
+                icon: '◌',
+                titulo: 'Nenhum evento no filtro atual',
+                sub: 'Tente ampliar o período ou limpar os filtros.',
+                ctaText: 'Limpar filtros',
+                ctaId: 'aud-empty-clear'
+              })
+            : R2A.emptyState({
+                icon: '✓',
+                titulo: 'Trilha de auditoria vazia',
+                sub: 'A primeira ação relevante do sistema (login, conciliação, vínculo de parcela) aparecerá aqui.'
+              });
+          tbody.innerHTML = `<tr><td colspan="5" style="padding: 0;">${empty}</td></tr>`;
+          const c = document.getElementById('aud-empty-clear');
+          if (c) c.addEventListener('click', () => document.getElementById('btn-limpar').click());
         } else {
           tbody.innerHTML = lista.map((e, i) => {
             const perfilClass = e.usuario_perfil === 'operador' ? 'operador' : '';

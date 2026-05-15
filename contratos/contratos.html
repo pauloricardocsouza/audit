@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contratos · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.27">
-<link rel="stylesheet" href="../shared.css?v=0.27">
-<link rel="stylesheet" href="contratos.css?v=0.27">
+<link rel="stylesheet" href="../styles/theme.css?v=0.28">
+<link rel="stylesheet" href="../shared.css?v=0.28">
+<link rel="stylesheet" href="contratos.css?v=0.28">
 </head>
 <body>
 
@@ -69,11 +69,11 @@
   </div>
 </div>
 
-<script src="../config.js?v=0.27"></script>
-<script src="../shared.js?v=0.27"></script>
-<script src="../mock-data.js?v=0.27"></script>
-<script src="../data.js?v=0.27"></script>
-<script src="contratos.js?v=0.27"></script>
+<script src="../config.js?v=0.28"></script>
+<script src="../shared.js?v=0.28"></script>
+<script src="../mock-data.js?v=0.28"></script>
+<script src="../data.js?v=0.28"></script>
+<script src="contratos.js?v=0.28"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
@@ -85,7 +85,30 @@
     function render(list) {
       const tbody = document.getElementById('tbody');
       if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="center" style="padding: 48px; color: var(--muted);">Nenhum contrato encontrado</td></tr>`;
+        const temFiltro = todos.length > 0;
+        const empty = temFiltro
+          ? R2A.emptyState({
+              icon: '◌',
+              titulo: 'Nenhum contrato encontrado',
+              sub: 'Tente ajustar a busca ou o filtro de estado.',
+              ctaText: 'Limpar filtros',
+              ctaId: 'empty-cta-clear'
+            })
+          : R2A.emptyState({
+              icon: '⊟',
+              titulo: 'Nenhum contrato cadastrado ainda',
+              sub: 'Importe um contrato em PDF ou cadastre um manualmente para começar a auditar parcelas.',
+              ctaText: '+ Importar contrato',
+              ctaHref: 'upload.html'
+            });
+        tbody.innerHTML = `<tr><td colspan="8" style="padding: 0;">${empty}</td></tr>`;
+        const clear = document.getElementById('empty-cta-clear');
+        if (clear) clear.addEventListener('click', () => {
+          document.getElementById('busca').value = '';
+          document.getElementById('filtro-estado').value = 'all';
+          R2A.filtros.clear('contratos_lista');
+          filtrar();
+        });
         return;
       }
       tbody.innerHTML = list.map(c => `

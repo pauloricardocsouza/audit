@@ -155,6 +155,36 @@ if (!R2A.requireAuth()) {
 
   document.getElementById('btn-voltar-2').addEventListener('click', () => irPara(2));
 
+  // Validação inline do CNPJ (formato + dígito verificador)
+  const cnpjEl = document.getElementById('f-tomador-cnpj');
+  const cnpjHint = document.getElementById('f-tomador-cnpj-hint');
+  if (cnpjEl && cnpjHint) {
+    cnpjEl.addEventListener('input', () => {
+      const raw = cnpjEl.value.replace(/\D/g, '');
+      if (!raw) { cnpjHint.style.display = 'none'; cnpjEl.style.borderColor = ''; return; }
+      // Auto-formata enquanto digita
+      if (raw.length === 14) {
+        cnpjEl.value = R2A.validar.fmtCNPJ(raw);
+        const valido = R2A.validar.cnpj(raw);
+        cnpjHint.style.display = 'block';
+        if (valido) {
+          cnpjHint.textContent = '✓ CNPJ válido';
+          cnpjHint.style.color = 'var(--ok)';
+          cnpjEl.style.borderColor = 'var(--ok)';
+        } else {
+          cnpjHint.textContent = '⚠ Dígito verificador inválido · revise antes de salvar';
+          cnpjHint.style.color = 'var(--warn)';
+          cnpjEl.style.borderColor = 'var(--warn)';
+        }
+      } else {
+        cnpjHint.style.display = 'block';
+        cnpjHint.textContent = `${raw.length}/14 dígitos`;
+        cnpjHint.style.color = 'var(--ink-4)';
+        cnpjEl.style.borderColor = '';
+      }
+    });
+  }
+
   // ----------------------------------------------------------
   // GERAR CRONOGRAMA PRICE SIMPLES (preenche textarea a partir dos campos)
   // ----------------------------------------------------------

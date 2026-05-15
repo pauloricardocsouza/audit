@@ -374,6 +374,65 @@
   };
 
   // ----------------------------------------------------------
+  // EMPTY STATE · helper para listas vazias com CTA
+  // ----------------------------------------------------------
+  R2A.emptyState = function (opts = {}) {
+    const { icon, titulo, sub, ctaText, ctaHref, ctaId } = opts;
+    return `
+      <div class="r2-empty">
+        ${icon ? `<div class="icon" aria-hidden="true">${icon}</div>` : ''}
+        ${titulo ? `<h2>${titulo}</h2>` : ''}
+        ${sub ? `<p style="max-width: 380px; margin: 4px auto 14px;">${sub}</p>` : ''}
+        ${ctaText
+          ? (ctaHref
+              ? `<a class="r2-btn r2-btn--primary" href="${ctaHref}">${ctaText}</a>`
+              : `<button class="r2-btn r2-btn--primary"${ctaId ? ` id="${ctaId}"` : ''}>${ctaText}</button>`)
+          : ''}
+      </div>
+    `;
+  };
+
+  // ----------------------------------------------------------
+  // VALIDAÇÃO · CNPJ / CPF com dígito verificador
+  // ----------------------------------------------------------
+  R2A.validar = {
+    cnpj(str) {
+      const v = String(str || '').replace(/\D/g, '');
+      if (v.length !== 14) return false;
+      if (/^(\d)\1+$/.test(v)) return false;
+      const calc = (slice, mult) => {
+        let s = 0;
+        for (let i = 0; i < slice.length; i++) s += parseInt(slice[i]) * mult[i];
+        const r = s % 11;
+        return r < 2 ? 0 : 11 - r;
+      };
+      const d1 = calc(v.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+      const d2 = calc(v.slice(0, 13), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+      return d1 === parseInt(v[12]) && d2 === parseInt(v[13]);
+    },
+
+    cpf(str) {
+      const v = String(str || '').replace(/\D/g, '');
+      if (v.length !== 11) return false;
+      if (/^(\d)\1+$/.test(v)) return false;
+      const calc = (slice, peso0) => {
+        let s = 0;
+        for (let i = 0; i < slice.length; i++) s += parseInt(slice[i]) * (peso0 - i);
+        const r = s % 11;
+        return r < 2 ? 0 : 11 - r;
+      };
+      const d1 = calc(v.slice(0, 9), 10);
+      const d2 = calc(v.slice(0, 10), 11);
+      return d1 === parseInt(v[9]) && d2 === parseInt(v[10]);
+    },
+
+    fmtCNPJ(str) {
+      const v = String(str || '').replace(/\D/g, '').padStart(14, '0').slice(0, 14);
+      return v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+  };
+
+  // ----------------------------------------------------------
   // SKELETONS · helpers para loading states em listas
   // ----------------------------------------------------------
   R2A.skeleton = {
@@ -509,6 +568,32 @@
             titulo: `${semPDF.length} contrato${semPDF.length > 1 ? 's' : ''} sem PDF anexado`,
             sub: 'Faça upload do arquivo original',
             href: rel('contratos/contratos.html')
+          });
+        }
+      } catch {}
+
+      // 5. Parcelas que vencem AINDA NESTE MÊS (próximos N dias até o fim do mês corrente)
+      try {
+        const contratos = contratosCache || await R2A.data.list(COL.CONTRATOS);
+        const hoje = new Date(); hoje.setHours(0,0,0,0);
+        const ano = hoje.getFullYear(), mes = hoje.getMonth();
+        const fimMes = new Date(ano, mes + 1, 0); fimMes.setHours(23,59,59,999);
+        let qtd = 0, total = 0;
+        contratos.forEach(c => {
+          (c.cronograma_parcelas || []).forEach(p => {
+            if (p.tipo === 'carencia' || p.valor === 0) return;
+            const v = new Date(p.vencimento + 'T00:00:00');
+            if (v >= hoje && v <= fimMes) { qtd++; total += p.valor; }
+          });
+        });
+        if (qtd > 0) {
+          const nomeMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mes];
+          out.push({
+            severidade: 'info',
+            icone: '★',
+            titulo: `${qtd} parcela${qtd > 1 ? 's' : ''} ainda em ${nomeMes}`,
+            sub: `Total ${R2A.fmt.moeda(total, { sinal: false })}`,
+            href: rel('contratos/dashboard.html')
           });
         }
       } catch {}

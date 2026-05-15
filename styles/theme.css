@@ -496,6 +496,14 @@ h3 { font-size: 14px; }
   min-width: 0;
   overflow-y: visible;
   overflow-x: hidden;
+  animation: r2-fadein .22s ease-out;
+}
+@keyframes r2-fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .r2-content, .r2a-content { animation: none; }
 }
 
 .r2-footer,
