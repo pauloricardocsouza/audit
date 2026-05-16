@@ -556,6 +556,24 @@
   }
 
   // -------- REVERSÃO --------
+  // Reverte transferência espelhada: limpa o par (banco + banco do mesmo
+  // mock) removendo vinculo_espelhado em ambos e voltando status a pendente
+  async function reverterEspelhada(id, pend) {
+    const it = State.banco.find(x => x.id === id);
+    if (!it || !it.vinculo_espelhado) return 0;
+    const parId = it.vinculo_espelhado;
+    const par = State.banco.find(x => x.id === parId);
+    delete it.vinculo_espelhado;
+    it.status = 'pendente';
+    pend.push(R2A.data.update(CFG.COLLECTIONS.LANCAMENTOS_BANCO, it.id, { vinculo_espelhado: null, status: 'pendente' }));
+    if (par) {
+      delete par.vinculo_espelhado;
+      par.status = 'pendente';
+      pend.push(R2A.data.update(CFG.COLLECTIONS.LANCAMENTOS_BANCO, par.id, { vinculo_espelhado: null, status: 'pendente' }));
+    }
+    return par ? 2 : 1;
+  }
+
   async function reverseSelection() {
     const ids = [...State.sel.banco, ...State.sel.sia];
     if (ids.length === 0) { R2A.toast('Nenhuma seleção', 'warning'); return; }
@@ -564,13 +582,23 @@
       !ids.includes(m.banco_id) && !m.sia_ids.some(s => ids.includes(s))
     );
     const pend = [];
-    [...State.sel.banco].forEach(id => {
+    let espelhadasRev = 0;
+    const idsEspelhadasJaTratados = new Set();
+    for (const id of State.sel.banco) {
       const it = State.banco.find(x => x.id === id);
-      if (it && ['ignorado', 'justificado', 'analise'].includes(it.status)) {
+      // Espelhada: reverte par inteiro
+      if (it && it.vinculo_espelhado && !idsEspelhadasJaTratados.has(id)) {
+        const parId = it.vinculo_espelhado;
+        idsEspelhadasJaTratados.add(id);
+        idsEspelhadasJaTratados.add(parId);
+        espelhadasRev += await reverterEspelhada(id, pend);
+        continue;
+      }
+      if (it && ['ignorado', 'justificado', 'analise', 'conciliado'].includes(it.status)) {
         it.status = 'pendente';
         pend.push(persistirStatus('banco', id, 'pendente'));
       }
-    });
+    }
     [...State.sel.sia].forEach(id => {
       const it = State.sia.find(x => x.id === id);
       if (it && ['ignorado', 'justificado', 'analise'].includes(it.status)) {
@@ -581,19 +609,26 @@
     State.sel.banco.clear(); State.sel.sia.clear();
     const n = before - State.matches.length;
     await Promise.all(pend);
-    R2A.auditar('reverter_selecao', { qtd_matches: n, ids });
-    R2A.toast(`${n} conciliação(ões) revertida(s)`, 'success');
+    R2A.auditar('reverter_selecao', { qtd_matches: n, ids, espelhadas_revertidas: espelhadasRev });
+    const extra = espelhadasRev > 0 ? ` · ${espelhadasRev} lançamento(s) espelhado(s)` : '';
+    R2A.toast(`${n} conciliação(ões) revertida(s)${extra}`, 'success');
     renderAll();
   }
 
   async function reverseAll() {
-    const ok = await R2A.confirm('Reverter TODAS as conciliações do período? Esta ação não pode ser desfeita.');
+    const ok = await R2A.confirm('Reverter TODAS as conciliações do período (inclui transferências espelhadas)? Esta ação não pode ser desfeita.');
     if (!ok) return;
     const n = State.matches.length;
     State.matches = [];
     const pend = [];
+    let espelhadasRev = 0;
     State.banco.forEach(x => {
-      if (['ignorado', 'justificado', 'analise'].includes(x.status)) {
+      if (x.vinculo_espelhado) {
+        delete x.vinculo_espelhado;
+        x.status = 'pendente';
+        pend.push(R2A.data.update(CFG.COLLECTIONS.LANCAMENTOS_BANCO, x.id, { vinculo_espelhado: null, status: 'pendente' }));
+        espelhadasRev++;
+      } else if (['ignorado', 'justificado', 'analise', 'conciliado'].includes(x.status)) {
         x.status = 'pendente';
         pend.push(persistirStatus('banco', x.id, 'pendente'));
       }
@@ -607,8 +642,9 @@
       delete x._ambiguo;
     });
     await Promise.all(pend);
-    R2A.auditar('reverter_tudo', { qtd_matches: n });
-    R2A.toast(`${n} conciliação(ões) e status manuais revertidos`, 'success');
+    R2A.auditar('reverter_tudo', { qtd_matches: n, espelhadas_revertidas: espelhadasRev });
+    const extra = espelhadasRev > 0 ? ` · ${espelhadasRev} espelhada(s)` : '';
+    R2A.toast(`${n} conciliação(ões) e status manuais revertidos${extra}`, 'success');
     renderAll();
   }
 
@@ -717,6 +753,14 @@
     if (!R2A.requireAuth()) return;
     R2A.renderShell({ modulo: 'conciliador', item: 'conciliacao' });
     R2A.renderFooter();
+    // Skeleton inicial nas duas tabelas enquanto carrega
+    try {
+      const sk = ['w-8', 'w-10', 'w-30', 'w-15', 'w-20'];
+      const tbB = document.getElementById('tbody-banco');
+      const tbS = document.getElementById('tbody-sia');
+      if (tbB) tbB.innerHTML = R2A.skeleton.rows(6, sk);
+      if (tbS) tbS.innerHTML = R2A.skeleton.rows(8, sk);
+    } catch {}
     await carregarDados();
     restaurarFiltros();
     wire();

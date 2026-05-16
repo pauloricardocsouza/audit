@@ -648,12 +648,29 @@
   // ------------------------------------------------------------
   // INIT
   // ------------------------------------------------------------
+  function mostrarSkeleton() {
+    // Skeleton inicial em cada uma das 3 sub-abas enquanto carrega
+    const sk = ['w-30', 'w-15', 'w-20', 'w-15', 'w-15', 'w-8'];
+    ['list-contas', 'list-categorias', 'list-usuarios'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = `
+        <div class="r2a-data-tbl">
+          <table>
+            <thead><tr><th>Carregando</th><th></th><th></th><th></th><th></th><th></th></tr></thead>
+            <tbody>${R2A.skeleton.rows(4, sk)}</tbody>
+          </table>
+        </div>`;
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     if (!R2A.requireAuth()) return;
     R2A.renderShell({ modulo: 'conciliador', item: 'cadastros' });
     R2A.renderFooter();
     R2A.data.init();
     wire();
+    mostrarSkeleton();
     await reload();
   });
 

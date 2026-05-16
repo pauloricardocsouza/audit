@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contratos · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.33">
-<link rel="stylesheet" href="../shared.css?v=0.33">
-<link rel="stylesheet" href="contratos.css?v=0.33">
+<link rel="stylesheet" href="../styles/theme.css?v=0.34">
+<link rel="stylesheet" href="../shared.css?v=0.34">
+<link rel="stylesheet" href="contratos.css?v=0.34">
 </head>
 <body>
 
@@ -38,6 +38,7 @@
             <option value="quitado">Quitados</option>
             <option value="renegociado">Renegociados</option>
             <option value="inadimplente">Inadimplentes</option>
+            <option value="cadeia">↺ Com cadeia (origem ou sucessor)</option>
           </select>
         </div>
 
@@ -69,11 +70,11 @@
   </div>
 </div>
 
-<script src="../config.js?v=0.33"></script>
-<script src="../shared.js?v=0.33"></script>
-<script src="../mock-data.js?v=0.33"></script>
-<script src="../data.js?v=0.33"></script>
-<script src="contratos.js?v=0.33"></script>
+<script src="../config.js?v=0.34"></script>
+<script src="../shared.js?v=0.34"></script>
+<script src="../mock-data.js?v=0.34"></script>
+<script src="../data.js?v=0.34"></script>
+<script src="contratos.js?v=0.34"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
@@ -145,8 +146,15 @@
       const estado = document.getElementById('filtro-estado').value;
       // Persiste filtros entre visitas
       R2A.filtros.save('contratos_lista', { q, estado });
+      // Pré-computa set de IDs com sucessor (para filtro 'cadeia')
+      const idsComSucessor = new Set(todos.filter(x => x.contrato_origem_id).map(x => x.contrato_origem_id));
       const filtrados = todos.filter(c => {
-        if (estado !== 'all' && c.estado !== estado) return false;
+        if (estado === 'cadeia') {
+          // Mostra apenas contratos que têm origem OU sucessor
+          if (!c.contrato_origem_id && !idsComSucessor.has(c.id)) return false;
+        } else if (estado !== 'all' && c.estado !== estado) {
+          return false;
+        }
         if (!q) return true;
         return (
           c.banco.toLowerCase().includes(q) ||
