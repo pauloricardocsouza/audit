@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contrato · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.28">
-<link rel="stylesheet" href="../shared.css?v=0.28">
-<link rel="stylesheet" href="contratos.css?v=0.28">
+<link rel="stylesheet" href="../styles/theme.css?v=0.29">
+<link rel="stylesheet" href="../shared.css?v=0.29">
+<link rel="stylesheet" href="contratos.css?v=0.29">
 <style>
   .parcela-acoes { display: flex; gap: 4px; justify-content: center; }
   .parcela-acoes .btn-sm { padding: 3px 8px; font-size: 10px; }
@@ -80,15 +80,30 @@
   </div>
 </div>
 
+<!-- Modal renegociar contrato -->
+<div class="r2a-modal-backdrop" id="modal-reneg">
+  <div class="r2a-modal" style="max-width: 460px;">
+    <div class="r2a-modal-header">
+      <h3 class="r2a-modal-title">Renegociar contrato</h3>
+      <button class="r2a-modal-close" id="modal-reneg-close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="r2a-modal-body" id="modal-reneg-body"></div>
+    <div class="r2a-modal-footer">
+      <button class="btn" id="modal-reneg-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="modal-reneg-confirm">Criar renegociação</button>
+    </div>
+  </div>
+</div>
+
 <!-- jsPDF para exportação do relatório do contrato -->
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
 
-<script src="../config.js?v=0.28"></script>
-<script src="../shared.js?v=0.28"></script>
-<script src="../mock-data.js?v=0.28"></script>
-<script src="../data.js?v=0.28"></script>
-<script src="contratos.js?v=0.28"></script>
+<script src="../config.js?v=0.29"></script>
+<script src="../shared.js?v=0.29"></script>
+<script src="../mock-data.js?v=0.29"></script>
+<script src="../data.js?v=0.29"></script>
+<script src="contratos.js?v=0.29"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
@@ -297,6 +312,7 @@
           </div>
           <div class="ct-page-actions">
             <a href="contratos.html" class="btn btn-ghost">← Voltar</a>
+            ${c.estado === 'ativo' ? '<button class="btn" id="btn-renegociar" title="Criar contrato de renegociação herdando os dados deste">↺ Renegociar</button>' : ''}
             <button class="btn" id="btn-export-pdf" title="Gerar relatório consolidado do contrato em PDF">⤓ Relatório PDF</button>
             ${(function () {
               const p = c.pdf_original;
@@ -485,6 +501,92 @@
       document.getElementById('btn-auto-vinc').addEventListener('click', autoVincular);
       const btnExp = document.getElementById('btn-export-pdf');
       if (btnExp) btnExp.addEventListener('click', () => exportarPDF(c, parcelas));
+      const btnReneg = document.getElementById('btn-renegociar');
+      if (btnReneg) btnReneg.addEventListener('click', () => abrirModalRenegociar(c));
+    }
+
+    // ------------------------------------------------------------
+    // MODAL RENEGOCIAR · cria novo contrato herdando dados e marca o atual
+    // como renegociado (campo contrato_origem_id liga os dois)
+    // ------------------------------------------------------------
+    const modalReneg = document.getElementById('modal-reneg');
+    document.getElementById('modal-reneg-close').addEventListener('click', () => modalReneg.classList.remove('open'));
+    document.getElementById('modal-reneg-cancel').addEventListener('click', () => modalReneg.classList.remove('open'));
+    modalReneg.addEventListener('click', e => { if (e.target === modalReneg) modalReneg.classList.remove('open'); });
+
+    function sugerirNovoNumero(numero) {
+      const m = String(numero || '').match(/^(.*?)-R(\d+)$/);
+      if (m) return `${m[1]}-R${parseInt(m[2], 10) + 1}`;
+      return `${numero}-R1`;
+    }
+
+    function abrirModalRenegociar(c) {
+      const novoNum = sugerirNovoNumero(c.numero_contrato);
+      const hoje = new Date().toISOString().slice(0, 10);
+      document.getElementById('modal-reneg-body').innerHTML = `
+        <p style="margin-bottom: 14px; color: var(--ink-3); font-size: 13px; line-height: 1.55;">
+          Cria um novo contrato copiando banco, produto, tomador, condições financeiras e
+          conta de débito deste. O cronograma e o PDF original ficam vazios para você
+          importar via PDF novo ou editar manualmente.
+        </p>
+        <p style="margin-bottom: 14px; color: var(--ink-3); font-size: 13px; line-height: 1.55;">
+          O contrato atual <strong style="color: var(--ink-1); font-family: var(--font-mono);">${c.numero_contrato}</strong>
+          será marcado como <span class="r2-pill r2-pill--mute" style="margin-left:2px;">RENEGOCIADO</span>.
+        </p>
+        <div class="r2a-form">
+          <div class="field">
+            <label>Número do novo contrato <span class="req">*</span></label>
+            <input type="text" id="reneg-numero" value="${novoNum}" autofocus class="r2-input">
+          </div>
+          <div class="field">
+            <label>Data de emissão da renegociação <span class="req">*</span></label>
+            <input type="date" id="reneg-emissao" value="${hoje}" class="r2-input">
+          </div>
+        </div>
+      `;
+      document.getElementById('modal-reneg-confirm').onclick = async () => {
+        const numero = document.getElementById('reneg-numero').value.trim();
+        const emissao = document.getElementById('reneg-emissao').value;
+        if (!numero) { R2A.toast('Informe o número do novo contrato', 'warning'); return; }
+        if (!emissao) { R2A.toast('Informe a data de emissão', 'warning'); return; }
+        try {
+          // Clone profundo do contrato original
+          const novo = JSON.parse(JSON.stringify(c));
+          delete novo.id;
+          delete novo.criado_em;
+          delete novo.atualizado_em;
+          novo.numero_contrato = numero;
+          novo.contrato_origem_id = c.id;
+          novo.estado = 'ativo';
+          novo.cronograma_parcelas = [];
+          novo.pdf_original = null;
+          novo.datas = novo.datas || {};
+          novo.datas.emissao = emissao;
+          novo.datas.primeira_parcela = null;
+          novo.datas.ultima_parcela = null;
+          novo.datas.limite_desembolso = null;
+          novo.instrumentos_relacionados = [];
+          novo.qualidade_extracao = {
+            pdf_escaneado: false,
+            ocr_aplicado: false,
+            cronograma_extraido: false,
+            checkbox_amortizacao_marcado: false,
+            cet_informado: !!(novo.taxa_juros && novo.taxa_juros.cet_aa),
+            campos_faltantes: ['cronograma_parcelas', 'pdf_original']
+          };
+
+          const salvo = await R2A.contratos.add(novo);
+          await R2A.contratos.update(c.id, { estado: 'renegociado' });
+          R2A.auditar('contrato.renegociar', { origem: c.id, novo: salvo.id, numero_anterior: c.numero_contrato, numero_novo: numero });
+          R2A.toast(`Contrato ${c.numero_contrato} renegociado · abrindo ${numero}`, 'success', 3000);
+          modalReneg.classList.remove('open');
+          setTimeout(() => { window.location.href = `contrato.html?id=${salvo.id}`; }, 700);
+        } catch (e) {
+          console.error(e);
+          R2A.toast('Erro ao renegociar: ' + (e.message || 'desconhecido'), 'error', 5000);
+        }
+      };
+      modalReneg.classList.add('open');
     }
 
     // ------------------------------------------------------------
