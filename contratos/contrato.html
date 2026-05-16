@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contrato · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.29">
-<link rel="stylesheet" href="../shared.css?v=0.29">
-<link rel="stylesheet" href="contratos.css?v=0.29">
+<link rel="stylesheet" href="../styles/theme.css?v=0.30">
+<link rel="stylesheet" href="../shared.css?v=0.30">
+<link rel="stylesheet" href="contratos.css?v=0.30">
 <style>
   .parcela-acoes { display: flex; gap: 4px; justify-content: center; }
   .parcela-acoes .btn-sm { padding: 3px 8px; font-size: 10px; }
@@ -58,7 +58,22 @@
 
     <div class="r2a-content">
       <section class="ct-wrap" id="cnt-wrap">
-        <div style="text-align:center; padding: 60px; color: var(--muted);">Carregando contrato…</div>
+        <div style="padding: 20px 0;">
+          <div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:18px;">
+            <div style="flex:1; max-width:380px;">
+              <span class="r2-skeleton" style="display:block; width:60%; height:24px; margin-bottom:8px;"> </span>
+              <span class="r2-skeleton" style="display:block; width:40%; height:14px;"> </span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <span class="r2-skeleton" style="width:90px; height:34px;"> </span>
+              <span class="r2-skeleton" style="width:130px; height:34px;"> </span>
+            </div>
+          </div>
+          <div class="r2-grid r2-grid-4" style="margin-bottom:14px;">
+            ${[1,2,3,4].map(()=>'<div class="r2-skeleton" style="height:96px;"> </div>').join('')}
+          </div>
+          <div class="r2-skeleton" style="display:block; width:100%; height:280px;"> </div>
+        </div>
       </section>
     </div>
 
@@ -99,11 +114,11 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
 
-<script src="../config.js?v=0.29"></script>
-<script src="../shared.js?v=0.29"></script>
-<script src="../mock-data.js?v=0.29"></script>
-<script src="../data.js?v=0.29"></script>
-<script src="contratos.js?v=0.29"></script>
+<script src="../config.js?v=0.30"></script>
+<script src="../shared.js?v=0.30"></script>
+<script src="../mock-data.js?v=0.30"></script>
+<script src="../data.js?v=0.30"></script>
+<script src="contratos.js?v=0.30"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
@@ -302,7 +317,37 @@
         flagsQ.campos_faltantes && flagsQ.campos_faltantes.length ? `<span class="tag mut">${flagsQ.campos_faltantes.length} campo(s) faltante(s)</span>` : null
       ].filter(Boolean).join(' ');
 
+      // Cadeia de renegociações: contrato anterior + posterior (se houver)
+      const todosContratos = await R2A.contratos.list();
+      const origem = c.contrato_origem_id ? todosContratos.find(x => x.id === c.contrato_origem_id) : null;
+      const sucessor = todosContratos.find(x => x.contrato_origem_id === c.id);
+      const cadeiaItens = [];
+      if (origem) {
+        cadeiaItens.push(`
+          <a href="contrato.html?id=${origem.id}" class="ct-cadeia-link" title="Contrato que deu origem a este">
+            <span class="r2-pill r2-pill--mute">RENEGOCIAÇÃO DE</span>
+            <strong>${origem.numero_contrato}</strong>
+            <span style="color:var(--ink-4);">· ${R2A.fmt.data(origem.datas.emissao)}</span>
+            <span style="margin-left:auto; color:var(--navy); font-weight:600;">ver →</span>
+          </a>
+        `);
+      }
+      if (sucessor) {
+        cadeiaItens.push(`
+          <a href="contrato.html?id=${sucessor.id}" class="ct-cadeia-link" title="Este contrato foi renegociado">
+            <span class="r2-pill r2-pill--info">RENEGOCIADO EM</span>
+            <strong>${sucessor.numero_contrato}</strong>
+            <span style="color:var(--ink-4);">· ${R2A.fmt.data(sucessor.datas.emissao)}</span>
+            <span style="margin-left:auto; color:var(--navy); font-weight:600;">ver →</span>
+          </a>
+        `);
+      }
+      const cadeiaHtml = cadeiaItens.length ? `
+        <div class="ct-cadeia">${cadeiaItens.join('')}</div>
+      ` : '';
+
       wrap.innerHTML = `
+        ${cadeiaHtml}
         <div class="ct-page-head">
           <div class="ct-page-title">
             <h1>${banco}</h1>

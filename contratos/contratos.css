@@ -382,6 +382,37 @@
 .tag.vio { background: var(--ambig-soft);  color: var(--ambig); }
 .tag.mut { background: var(--line-2);      color: var(--ink-4); }
 
+/* Cadeia de renegociações · banner clicável antes do page-head */
+.ct-cadeia {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.ct-cadeia-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--navy-soft);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--navy);
+  border-radius: var(--r-md);
+  text-decoration: none;
+  color: var(--ink-2);
+  font-size: 13px;
+  transition: background .12s, border-color .12s;
+}
+.ct-cadeia-link:hover {
+  background: var(--surface);
+  border-color: var(--navy);
+}
+.ct-cadeia-link strong {
+  font-family: var(--font-mono);
+  color: var(--ink-1);
+  font-size: 12.5px;
+}
+
 /* Pills (.pill) legadas usadas no badge "ativo" */
 .pill {
   display: inline-flex;
