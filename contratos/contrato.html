@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contrato · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.32">
-<link rel="stylesheet" href="../shared.css?v=0.32">
-<link rel="stylesheet" href="contratos.css?v=0.32">
+<link rel="stylesheet" href="../styles/theme.css?v=0.33">
+<link rel="stylesheet" href="../shared.css?v=0.33">
+<link rel="stylesheet" href="contratos.css?v=0.33">
 <style>
   .parcela-acoes { display: flex; gap: 4px; justify-content: center; }
   .parcela-acoes .btn-sm { padding: 3px 8px; font-size: 10px; }
@@ -114,11 +114,11 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
 
-<script src="../config.js?v=0.32"></script>
-<script src="../shared.js?v=0.32"></script>
-<script src="../mock-data.js?v=0.32"></script>
-<script src="../data.js?v=0.32"></script>
-<script src="contratos.js?v=0.32"></script>
+<script src="../config.js?v=0.33"></script>
+<script src="../shared.js?v=0.33"></script>
+<script src="../mock-data.js?v=0.33"></script>
+<script src="../data.js?v=0.33"></script>
+<script src="contratos.js?v=0.33"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
@@ -357,7 +357,8 @@
           </div>
           <div class="ct-page-actions">
             <a href="contratos.html" class="btn btn-ghost">← Voltar</a>
-            ${c.estado === 'ativo' ? '<button class="btn" id="btn-renegociar" title="Criar contrato de renegociação herdando os dados deste">↺ Renegociar</button>' : ''}
+            <button class="btn" id="btn-duplicar" title="Duplicar este contrato em uma nova operação independente (sem encerrar a atual)">⎘ Duplicar</button>
+            ${c.estado === 'ativo' ? '<button class="btn" id="btn-renegociar" title="Renegociar · marca este como renegociado e cria sucessor com vínculo de cadeia">↺ Renegociar</button>' : ''}
             <button class="btn" id="btn-export-pdf" title="Gerar relatório consolidado do contrato em PDF">⤓ Relatório PDF</button>
             ${(function () {
               const p = c.pdf_original;
@@ -547,7 +548,9 @@
       const btnExp = document.getElementById('btn-export-pdf');
       if (btnExp) btnExp.addEventListener('click', () => exportarPDF(c, parcelas));
       const btnReneg = document.getElementById('btn-renegociar');
-      if (btnReneg) btnReneg.addEventListener('click', () => abrirModalRenegociar(c));
+      if (btnReneg) btnReneg.addEventListener('click', () => abrirModalClone(c, 'renegociar'));
+      const btnDup = document.getElementById('btn-duplicar');
+      if (btnDup) btnDup.addEventListener('click', () => abrirModalClone(c, 'duplicar'));
     }
 
     // ------------------------------------------------------------
@@ -559,32 +562,46 @@
     document.getElementById('modal-reneg-cancel').addEventListener('click', () => modalReneg.classList.remove('open'));
     modalReneg.addEventListener('click', e => { if (e.target === modalReneg) modalReneg.classList.remove('open'); });
 
-    function sugerirNovoNumero(numero) {
-      const m = String(numero || '').match(/^(.*?)-R(\d+)$/);
-      if (m) return `${m[1]}-R${parseInt(m[2], 10) + 1}`;
-      return `${numero}-R1`;
+    function sugerirNovoNumero(numero, modo) {
+      const sufixo = modo === 'duplicar' ? '-DUP' : '-R';
+      const re = modo === 'duplicar' ? /^(.*?)-DUP(\d+)$/ : /^(.*?)-R(\d+)$/;
+      const m = String(numero || '').match(re);
+      if (m) return `${m[1]}${sufixo}${parseInt(m[2], 10) + 1}`;
+      return `${numero}${sufixo}${modo === 'duplicar' ? '2' : '1'}`;
     }
 
-    function abrirModalRenegociar(c) {
-      const novoNum = sugerirNovoNumero(c.numero_contrato);
+    // Modo: 'renegociar' (marca original como renegociado + grava contrato_origem_id)
+    //       'duplicar'   (clone independente · não toca no original)
+    function abrirModalClone(c, modo) {
+      const isReneg = modo === 'renegociar';
+      const novoNum = sugerirNovoNumero(c.numero_contrato, modo);
       const hoje = new Date().toISOString().slice(0, 10);
+      const titulo = document.querySelector('#modal-reneg .r2a-modal-title');
+      if (titulo) titulo.textContent = isReneg ? 'Renegociar contrato' : 'Duplicar contrato';
+      const btnConfirm = document.getElementById('modal-reneg-confirm');
+      if (btnConfirm) btnConfirm.textContent = isReneg ? 'Criar renegociação' : 'Duplicar';
+
+      const explicacao = isReneg
+        ? `Cria um novo contrato copiando banco, produto, tomador, condições financeiras e conta de débito deste.
+           O cronograma e o PDF ficam vazios para você importar via PDF novo ou editar manualmente.`
+        : `Cria uma cópia independente deste contrato (mesmo banco, produto, tomador, condições e conta).
+           O cronograma e o PDF ficam vazios. <strong>O contrato atual permanece ativo</strong> e os dois passam a existir lado a lado.`;
+      const aviso = isReneg
+        ? `O contrato atual <strong style="color: var(--ink-1); font-family: var(--font-mono);">${c.numero_contrato}</strong>
+           será marcado como <span class="r2-pill r2-pill--mute" style="margin-left:2px;">RENEGOCIADO</span>.`
+        : `Não há vínculo de cadeia entre os dois. Use a opção <em>Renegociar</em> se quiser encerrar este e
+           preservar o histórico ligado.`;
+
       document.getElementById('modal-reneg-body').innerHTML = `
-        <p style="margin-bottom: 14px; color: var(--ink-3); font-size: 13px; line-height: 1.55;">
-          Cria um novo contrato copiando banco, produto, tomador, condições financeiras e
-          conta de débito deste. O cronograma e o PDF original ficam vazios para você
-          importar via PDF novo ou editar manualmente.
-        </p>
-        <p style="margin-bottom: 14px; color: var(--ink-3); font-size: 13px; line-height: 1.55;">
-          O contrato atual <strong style="color: var(--ink-1); font-family: var(--font-mono);">${c.numero_contrato}</strong>
-          será marcado como <span class="r2-pill r2-pill--mute" style="margin-left:2px;">RENEGOCIADO</span>.
-        </p>
+        <p style="margin-bottom: 14px; color: var(--ink-3); font-size: 13px; line-height: 1.55;">${explicacao}</p>
+        <p style="margin-bottom: 14px; color: var(--ink-3); font-size: 13px; line-height: 1.55;">${aviso}</p>
         <div class="r2a-form">
           <div class="field">
             <label>Número do novo contrato <span class="req">*</span></label>
             <input type="text" id="reneg-numero" value="${novoNum}" autofocus class="r2-input">
           </div>
           <div class="field">
-            <label>Data de emissão da renegociação <span class="req">*</span></label>
+            <label>Data de emissão <span class="req">*</span></label>
             <input type="date" id="reneg-emissao" value="${hoje}" class="r2-input">
           </div>
         </div>
@@ -592,16 +609,23 @@
       document.getElementById('modal-reneg-confirm').onclick = async () => {
         const numero = document.getElementById('reneg-numero').value.trim();
         const emissao = document.getElementById('reneg-emissao').value;
-        if (!numero) { R2A.toast('Informe o número do novo contrato', 'warning'); return; }
-        if (!emissao) { R2A.toast('Informe a data de emissão', 'warning'); return; }
+        R2A.limparErrosForm(document.getElementById('modal-reneg-body'));
+        let temErro = false;
+        if (!numero) { R2A.marcarErro(document.getElementById('reneg-numero'), 'Obrigatório'); temErro = true; }
+        if (!emissao) { R2A.marcarErro(document.getElementById('reneg-emissao'), 'Obrigatória'); temErro = true; }
+        if (emissao && !R2A.validar.dataNaoFutura(emissao)) {
+          R2A.marcarErro(document.getElementById('reneg-emissao'), 'Não pode ser data futura');
+          temErro = true;
+        }
+        if (temErro) return;
+
         try {
-          // Clone profundo do contrato original
           const novo = JSON.parse(JSON.stringify(c));
           delete novo.id;
           delete novo.criado_em;
           delete novo.atualizado_em;
           novo.numero_contrato = numero;
-          novo.contrato_origem_id = c.id;
+          novo.contrato_origem_id = isReneg ? c.id : null;
           novo.estado = 'ativo';
           novo.cronograma_parcelas = [];
           novo.pdf_original = null;
@@ -621,14 +645,19 @@
           };
 
           const salvo = await R2A.contratos.add(novo);
-          await R2A.contratos.update(c.id, { estado: 'renegociado' });
-          R2A.auditar('contrato.renegociar', { origem: c.id, novo: salvo.id, numero_anterior: c.numero_contrato, numero_novo: numero });
-          R2A.toast(`Contrato ${c.numero_contrato} renegociado · abrindo ${numero}`, 'success', 3000);
+          if (isReneg) {
+            await R2A.contratos.update(c.id, { estado: 'renegociado' });
+            R2A.auditar('contrato.renegociar', { origem: c.id, novo: salvo.id, numero_anterior: c.numero_contrato, numero_novo: numero });
+            R2A.toast(`Contrato ${c.numero_contrato} renegociado · abrindo ${numero}`, 'success', 3000);
+          } else {
+            R2A.auditar('contrato.duplicar', { origem: c.id, novo: salvo.id, numero_anterior: c.numero_contrato, numero_novo: numero });
+            R2A.toast(`Duplicado em ${numero} · contrato atual mantido ativo`, 'success', 3000);
+          }
           modalReneg.classList.remove('open');
           setTimeout(() => { window.location.href = `contrato.html?id=${salvo.id}`; }, 700);
         } catch (e) {
           console.error(e);
-          R2A.toast('Erro ao renegociar: ' + (e.message || 'desconhecido'), 'error', 5000);
+          R2A.toast(`Erro ao ${isReneg ? 'renegociar' : 'duplicar'}: ` + (e.message || 'desconhecido'), 'error', 5000);
         }
       };
       modalReneg.classList.add('open');
