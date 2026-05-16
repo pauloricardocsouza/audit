@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contratos · R2 Audit</title>
-<link rel="stylesheet" href="../styles/theme.css?v=0.30">
-<link rel="stylesheet" href="../shared.css?v=0.30">
-<link rel="stylesheet" href="contratos.css?v=0.30">
+<link rel="stylesheet" href="../styles/theme.css?v=0.31">
+<link rel="stylesheet" href="../shared.css?v=0.31">
+<link rel="stylesheet" href="contratos.css?v=0.31">
 </head>
 <body>
 
@@ -69,11 +69,11 @@
   </div>
 </div>
 
-<script src="../config.js?v=0.30"></script>
-<script src="../shared.js?v=0.30"></script>
-<script src="../mock-data.js?v=0.30"></script>
-<script src="../data.js?v=0.30"></script>
-<script src="contratos.js?v=0.30"></script>
+<script src="../config.js?v=0.31"></script>
+<script src="../shared.js?v=0.31"></script>
+<script src="../mock-data.js?v=0.31"></script>
+<script src="../data.js?v=0.31"></script>
+<script src="contratos.js?v=0.31"></script>
 <script>
   if (R2A.requireAuth()) {
     R2A.renderShell({ modulo: 'contratos', item: 'contratos' });
@@ -111,12 +111,21 @@
         });
         return;
       }
-      tbody.innerHTML = list.map(c => `
+      // Conjunto de IDs que aparecem como origem de outro contrato (têm sucessor)
+      const idsComSucessor = new Set(todos.filter(x => x.contrato_origem_id).map(x => x.contrato_origem_id));
+      tbody.innerHTML = list.map(c => {
+        const temOrigem = !!c.contrato_origem_id;
+        const temSucessor = idsComSucessor.has(c.id);
+        const badgeCadeia = (temOrigem || temSucessor)
+          ? `<span class="ct-cadeia-badge" title="${temOrigem && temSucessor ? 'Tem origem e sucessor' : temOrigem ? 'Renegociação de outro contrato' : 'Foi renegociado'}">↺</span>`
+          : '';
+        return `
         <tr onclick="window.location.href='contrato.html?id=${c.id}'">
           <td>
             <div class="banco">
               <span class="banco-code">${c.banco_codigo_bacen || '—'}</span>
               <strong>${c.banco}</strong>
+              ${badgeCadeia}
             </div>
             <div class="contrato-num">${c.numero_contrato}</div>
           </td>
@@ -128,7 +137,7 @@
           <td><span class="tag acc">${R2A.contratos.fmtSistema(c.estrutura.sistema_amortizacao_detectado)}</span></td>
           <td class="center"><span class="pill ${c.estado === 'ativo' ? 'conciliado' : 'pendente'}">${c.estado}</span></td>
         </tr>
-      `).join('');
+      `;}).join('');
     }
 
     function filtrar() {

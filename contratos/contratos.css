@@ -188,6 +188,21 @@
   color: var(--ink-4);
   margin-top: 3px;
 }
+.ct-tbl .ct-cadeia-badge,
+.ct-cadeia-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: var(--navy-soft);
+  color: var(--navy);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
+  cursor: help;
+}
 
 /* progresso */
 .ct-progress {
