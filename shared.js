@@ -952,6 +952,107 @@
   R2A.$$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
   // ----------------------------------------------------------
+  // VALIDAÇÃO · CNPJ, CPF, email, datas
+  // Todos retornam true/false (não lançam). Vazio = válido (campo opcional).
+  // ----------------------------------------------------------
+  R2A.validar = {
+    cnpj(s) {
+      if (!s) return true;
+      s = String(s).replace(/\D/g, '');
+      if (s.length !== 14) return false;
+      if (/^(\d)\1+$/.test(s)) return false;
+      let soma = 0, pos = 5;
+      for (let i = 0; i < 12; i++) { soma += parseInt(s[i]) * pos; pos = pos === 2 ? 9 : pos - 1; }
+      let resto = soma % 11;
+      const dig1 = resto < 2 ? 0 : 11 - resto;
+      if (parseInt(s[12]) !== dig1) return false;
+      soma = 0; pos = 6;
+      for (let i = 0; i < 13; i++) { soma += parseInt(s[i]) * pos; pos = pos === 2 ? 9 : pos - 1; }
+      resto = soma % 11;
+      const dig2 = resto < 2 ? 0 : 11 - resto;
+      return parseInt(s[13]) === dig2;
+    },
+    cpf(s) {
+      if (!s) return true;
+      s = String(s).replace(/\D/g, '');
+      if (s.length !== 11) return false;
+      if (/^(\d)\1+$/.test(s)) return false;
+      let soma = 0;
+      for (let i = 0; i < 9; i++) soma += parseInt(s[i]) * (10 - i);
+      let resto = (soma * 10) % 11;
+      if (resto === 10) resto = 0;
+      if (resto !== parseInt(s[9])) return false;
+      soma = 0;
+      for (let i = 0; i < 10; i++) soma += parseInt(s[i]) * (11 - i);
+      resto = (soma * 10) % 11;
+      if (resto === 10) resto = 0;
+      return resto === parseInt(s[10]);
+    },
+    cpfOuCnpj(s) {
+      if (!s) return true;
+      const digits = String(s).replace(/\D/g, '');
+      if (digits.length === 11) return R2A.validar.cpf(s);
+      if (digits.length === 14) return R2A.validar.cnpj(s);
+      return false;
+    },
+    email(s) {
+      if (!s) return true;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s).trim());
+    },
+    dataNaoFutura(iso) {
+      if (!iso) return true;
+      return iso <= new Date().toISOString().slice(0, 10);
+    },
+    dataOrdem(iniISO, fimISO) {
+      if (!iniISO || !fimISO) return true;
+      return iniISO <= fimISO;
+    }
+  };
+
+  // Formatadores de máscara (apenas display)
+  R2A.fmt.cnpj = function (s) {
+    s = String(s || '').replace(/\D/g, '');
+    if (s.length !== 14) return String(s || '');
+    return s.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+  };
+  R2A.fmt.cpf = function (s) {
+    s = String(s || '').replace(/\D/g, '');
+    if (s.length !== 11) return String(s || '');
+    return s.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+  };
+  R2A.fmt.cpfOuCnpj = function (s) {
+    const d = String(s || '').replace(/\D/g, '');
+    if (d.length === 11) return R2A.fmt.cpf(s);
+    if (d.length === 14) return R2A.fmt.cnpj(s);
+    return String(s || '');
+  };
+
+  // Helper de erro inline em campo (input + mensagem abaixo)
+  R2A.marcarErro = function (inputEl, msg) {
+    if (!inputEl) return;
+    inputEl.classList.add('is-invalid');
+    inputEl.setAttribute('aria-invalid', 'true');
+    let hint = inputEl.parentElement.querySelector('.r2-field-error');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.className = 'r2-field-error';
+      inputEl.parentElement.appendChild(hint);
+    }
+    hint.textContent = msg;
+  };
+  R2A.limparErro = function (inputEl) {
+    if (!inputEl) return;
+    inputEl.classList.remove('is-invalid');
+    inputEl.removeAttribute('aria-invalid');
+    const hint = inputEl.parentElement.querySelector('.r2-field-error');
+    if (hint) hint.remove();
+  };
+  R2A.limparErrosForm = function (formEl) {
+    if (!formEl) return;
+    formEl.querySelectorAll('.is-invalid').forEach(el => R2A.limparErro(el));
+  };
+
+  // ----------------------------------------------------------
   // PERÍODOS · fechamento contábil mensal
   // Cada documento: { id, mes: 'YYYY-MM', status: 'aberto'|'fechado',
   //                   fechado_por_uid, fechado_por_nome, fechado_em,

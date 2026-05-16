@@ -504,10 +504,27 @@
     const senha = document.getElementById('f-senha').value;
     const isEdit = !!id;
 
-    if (!nome || !email || !perfil) return showFormError('Preencha todos os campos obrigatórios');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showFormError('E-mail inválido');
-    if (!isEdit && (!senha || senha.length < 6)) return showFormError('Senha deve ter no mínimo 6 caracteres');
-    if (isEdit && senha && senha.length < 6) return showFormError('Nova senha deve ter no mínimo 6 caracteres');
+    // Limpa erros anteriores
+    R2A.limparErrosForm(document.getElementById('modal-body'));
+
+    if (!nome || !email || !perfil) {
+      if (!nome) R2A.marcarErro(document.getElementById('f-nome'), 'Obrigatório');
+      if (!email) R2A.marcarErro(document.getElementById('f-email'), 'Obrigatório');
+      if (!perfil) R2A.marcarErro(document.getElementById('f-perfil'), 'Obrigatório');
+      return showFormError('Preencha todos os campos obrigatórios');
+    }
+    if (!R2A.validar.email(email)) {
+      R2A.marcarErro(document.getElementById('f-email'), 'Formato de e-mail inválido');
+      return showFormError('E-mail inválido');
+    }
+    if (!isEdit && (!senha || senha.length < 6)) {
+      R2A.marcarErro(document.getElementById('f-senha'), 'Mínimo 6 caracteres');
+      return showFormError('Senha deve ter no mínimo 6 caracteres');
+    }
+    if (isEdit && senha && senha.length < 6) {
+      R2A.marcarErro(document.getElementById('f-senha'), 'Mínimo 6 caracteres');
+      return showFormError('Nova senha deve ter no mínimo 6 caracteres');
+    }
 
     const dup = State.usuarios.find(u => u.id !== id && u.email === email);
     if (dup) return showFormError('Já existe um usuário com esse e-mail');

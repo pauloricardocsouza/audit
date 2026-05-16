@@ -919,6 +919,44 @@ h3 { font-size: 14px; }
   box-shadow: 0 0 0 3px rgba(26,58,82,.12);
 }
 
+/* Campo com erro inline */
+.is-invalid,
+input.is-invalid,
+select.is-invalid,
+textarea.is-invalid {
+  border-color: var(--err) !important;
+  background: var(--err-soft) !important;
+}
+.is-invalid:focus,
+input.is-invalid:focus,
+select.is-invalid:focus,
+textarea.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18) !important;
+}
+.r2-field-error {
+  color: var(--err);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.r2-field-error::before {
+  content: '!';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: var(--err);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
 /* Hero (dashboard geral) */
 .r2-hero {
   background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);

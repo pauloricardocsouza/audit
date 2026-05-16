@@ -164,7 +164,7 @@ if (!R2A.requireAuth()) {
       if (!raw) { cnpjHint.style.display = 'none'; cnpjEl.style.borderColor = ''; return; }
       // Auto-formata enquanto digita
       if (raw.length === 14) {
-        cnpjEl.value = R2A.validar.fmtCNPJ(raw);
+        cnpjEl.value = R2A.fmt.cnpj(raw);
         const valido = R2A.validar.cnpj(raw);
         cnpjHint.style.display = 'block';
         if (valido) {
@@ -220,6 +220,9 @@ if (!R2A.requireAuth()) {
     const vN = id => parseFloat(document.getElementById(id).value) || null;
     const vI = id => parseInt(document.getElementById(id).value) || null;
 
+    // Limpa erros anteriores
+    R2A.limparErrosForm(document.getElementById('panel-3'));
+
     const obrigatorios = [
       ['f-banco', 'Banco'],
       ['f-numero', 'Número do contrato'],
@@ -229,12 +232,47 @@ if (!R2A.requireAuth()) {
       ['f-1parcela', 'Data da 1ª parcela'],
       ['f-prazo', 'Prazo']
     ];
+    let erros = 0, primeiroErro = null;
     for (const [id, label] of obrigatorios) {
       if (!v(id)) {
-        R2A.toast(`Campo obrigatório: ${label}`, 'error', 4000);
-        document.getElementById(id).focus();
-        return;
+        const el = document.getElementById(id);
+        R2A.marcarErro(el, 'Campo obrigatório');
+        erros++;
+        primeiroErro = primeiroErro || el;
       }
+    }
+
+    // Validação CNPJ do tomador (se informado)
+    const cnpj = v('f-tomador-cnpj');
+    if (cnpj && !R2A.validar.cnpj(cnpj)) {
+      const el = document.getElementById('f-tomador-cnpj');
+      R2A.marcarErro(el, 'CNPJ inválido · verifique os dígitos');
+      erros++;
+      primeiroErro = primeiroErro || el;
+    }
+
+    // Data de emissão não pode ser futura
+    const emissao = v('f-emissao');
+    if (emissao && !R2A.validar.dataNaoFutura(emissao)) {
+      const el = document.getElementById('f-emissao');
+      R2A.marcarErro(el, 'Emissão não pode ser data futura');
+      erros++;
+      primeiroErro = primeiroErro || el;
+    }
+
+    // 1ª parcela deve ser >= emissão
+    const p1 = v('f-1parcela');
+    if (emissao && p1 && !R2A.validar.dataOrdem(emissao, p1)) {
+      const el = document.getElementById('f-1parcela');
+      R2A.marcarErro(el, 'Primeira parcela deve ser igual ou posterior à emissão');
+      erros++;
+      primeiroErro = primeiroErro || el;
+    }
+
+    if (erros > 0) {
+      R2A.toast(`${erros} campo(s) precisa(m) ser corrigido(s)`, 'error', 4000);
+      if (primeiroErro) primeiroErro.focus();
+      return;
     }
 
     // Compor objeto seguindo schema v2
