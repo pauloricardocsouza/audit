@@ -227,6 +227,99 @@ audit/
 6. **Iteração**: uma feature por commit, com mensagem detalhada. Reporta no chat o que entregou.
 7. **Sem skip de hooks** nem `--no-verify` nem `--no-gpg-sign`.
 
+## OBSERVAÇÕES DA MEMÓRIA · aprendizados de quem trabalhou aqui
+
+Anotações práticas pra outro Claude pegar o ritmo sem repetir erros. Trate isto como conhecimento institucional sobre o Ricardo e sobre o projeto.
+
+### Sobre o Ricardo (estilo de trabalho)
+
+- **Comunicação extremamente direta.** Mensagens típicas: "continue", "pode sim", "tem algo para adiantarmos?". Não enrole em explicação se não for pedido. Resposta dele é geralmente 5-30 palavras.
+- **Auto mode é o default agora.** Ele liga uma vez ("continue autonomamente") e quer ver entrega, não perguntas. Pergunte SÓ quando há real ambiguidade de negócio — decisão técnica decide você sozinho e justifica em 1 linha no commit.
+- **Aprova quando você organiza em blocos.** Análise crítica em 7 blocos de perguntas estruturadas (`AskUserQuestion` com 2-4 alternativas) destravou decisões importantes. Use esse padrão quando precisar mesmo perguntar.
+- **Quer ver entrega visual a cada turno.** Resumo no final de cada commit listando o que mudou + como testar. Ele valida com print/screenshot ou descrição de bug.
+- **Corrige rota com print/desenho.** Quando algo está visualmente errado, manda screenshot anotado com círculos vermelhos. Não discute, mostra. Confie no que ele indica.
+- **Bump de versão é ritual.** Toda mudança visível bumpa `APP_VERSION` no `config.js` + cache-bust `?v=X.Y` em **todos os 14 HTMLs** + footer hardcoded no `login.html`. Esquecer disso = bug de cache no dia seguinte.
+
+### Decisões já cravadas (NÃO REPERGUNTAR)
+
+| Tema | Decisão | Resposta dele |
+|---|---|---|
+| Multi-tenant | 1 projeto Firebase por cliente | Bloco 1 |
+| Controles internos | Só trilha, sem alçada/aprovação | Bloco 2 |
+| Contábil | Conciliador de fluxo puro, ZERO partida dobrada | Bloco 3 |
+| Indicadores CFO | Nada agora | Bloco 4 |
+| Processamento | Bloqueia total saldo divergente · começa por OFX | Bloco 5 |
+| Engenharia | Só virtualização priorizada (rejeitou Sentry/CI/CD/loading-states inicialmente) | Bloco 6 |
+| LLM | Claude (Anthropic), não GPT | resp. anterior |
+| Proxy LLM | Firebase Functions, não Cloudflare Worker | resp. anterior |
+| Calibração schema | Genérico inicial, sem mandar PDF de exemplo | resp. anterior |
+| Tolerância parcela × extrato | ±5d, ±5% | resp. anterior |
+| OCR scanned | Claude Vision na mesma Function | resp. anterior |
+
+### Pegadinhas técnicas descobertas (não cair de novo)
+
+- **`node --check` não está disponível** neste ambiente do Windows. Você não consegue validar sintaxe JS antes de commitar. Confie em revisão visual e teste após push.
+- **`gh` CLI também não disponível**. Se precisar criar PR, retorne URL para clique manual: `https://github.com/{owner}/{repo}/pull/new/{branch}`.
+- **Bug silencioso clássico**: o `cadastros.js` usava selectors `.r2c-*` quando o HTML migrou pra `.r2a-*` na virada D2 (v0.14). Quebrou navegação entre sub-abas sem erro nenhum no console. Foi fix da v0.17. Quando renomear classes, **busque em TODOS os JS**.
+- **`R2A.fmt.moeda(v, {sinal: false})`** suprime sinal. Use quando o valor já é absoluto na linha (KPI, total).
+- **PDF.js no `upload.js`**: é `<script type="module">` que importa via `import` ESM. `R2A.*` é window global. Funciona por timing (módulo defere). Não tente carregar PDF.js também via `<script src>` no HTML — duplica.
+- **`MutationObserver` nos modais** (focus trap): captura mudança de classe `is-open`/`open`. Cuidado com `setTimeout(50)` antes de mover foco, senão tenta focar elemento ainda invisível.
+- **`R2A.data.list` em arrays grandes pode ser lento** se persistir muito no localStorage. Use `Promise.all` para updates em batch (vide `applyStatus`, `autoVincular`).
+- **CRLF/LF warning do Git no Windows** aparece em todo commit. Não é erro. `core.autocrlf` está em true. Ignora.
+- **`localStorage` tem quota** (~5-10 MB). Se a coleção `auditoria` crescer demais em DEV, R2A.data.add pode falhar silenciosamente. Coloquei try/catch no R2A.auditar exatamente por isso.
+- **SEED_VERSION em `data.js`** força re-seed quando o mock muda. Sempre bumpe quando mexer em `mock-data.js` estrutural — mas o seed preserva campos do usuário (vínculos manuais, status conciliado).
+
+### Convenções implícitas (aprendidas no caminho)
+
+- **Sem em-dashes** (`—`) em prosa nova. Use ` · ` ou ` - ` ou ` -- `. Vale para texto, código, comentário. Crítico no commit.
+- **Tabular nums em TODA célula de dinheiro/quantidade**: classe `.num` ou inline `font-variant-numeric: tabular-nums`. Sem isso, valores não alinham.
+- **Datas em listas/tabelas**: `var(--font-mono)` 11.5px cor `var(--ink-4)`. Padrão D2.
+- **Cores semânticas só onde semântica.** Verde/vermelho/âmbar reservados para estado. Decorativo é cinza (Bloco 6 cinza nos gradientes). Laranja só em badges de alerta.
+- **Logo azul horizontal em fundo claro** (sidebar). **Logo branca horizontal em fundo escuro** (login, letterhead). Não usar em letterhead de relatório (ele removeu uma vez).
+- **Não inflar altura desnecessariamente.** Ele reclamou da action bar do Conciliador com 200px de altura por causa de `flex-wrap: wrap`. Force `flex-wrap: nowrap` + `overflow-x: auto` em barras de ação desktop.
+- **Footer**: mono uppercase letter-spacing 0.12em. "R2 SOLUÇÕES EMPRESARIAIS · vX.Y" à esquerda, ambiente (DEV/PROD) à direita.
+
+### O que NÃO fazer (regras duras)
+
+1. **Não introduza React/Vue/Tailwind/Vite/bundler.** Decisão firme do prompt original. HTML puro + R2A namespace global.
+2. **Não use `--no-verify`, `--no-gpg-sign`, `--amend`.** Sempre commit novo.
+3. **Não force push** em main do audit.
+4. **Não esqueça do cache-bust** nos 14 HTMLs em mudança visível. Comando rápido:
+   ```bash
+   find . -name "*.html" -not -path "./.claude/*" -not -path "./.git/*" -exec sed -i 's|?v=X.X|?v=Y.Y|g' {} \;
+   sed -i 's|· v0\.X|· v0.Y|g' login.html
+   ```
+5. **Não crie arquivos `.md` que ele não pediu.** README/CHANGELOG não foi priorizado. PROMPT-MIGRACAO foi pedido explicitamente.
+6. **Não toque em `shared.css`** sem cuidado — é um stub minimal por design. O design system vive em `styles/theme.css`.
+7. **Não delete dados** (resetar localStorage, drop coleção) sem confirmação explícita.
+
+### Contexto dos clientes / da operação
+
+- **R2** = empresa do Ricardo. Cliente da própria ferramenta. Opera os dados dos clientes finais.
+- **Filadelfia** (Filadelfiainfo Comercial Ltda, CNPJ 96.787.858/0001-17) = cliente piloto. Tem ERP próprio chamado **SIA**. Os contratos reais usados pra calibrar o schema v2 são dela (Sofisa PII56430-6, Safra 003516147, BB CCB escaneado, Caixa, etc.). Sistema antigo dela é o Filadelfia em `fc.solucoesr2.com.br` (Firebase Realtime DB single-file).
+- **GPC** (Grupo Pinto Cerqueira) = cliente âncora. Supermercado regional, 4 lojas. Caso de uso da **conta garantida vinculada à CC** (Onda 0). Sistema dele paralelo é o Comercial GPC (Firestore multi-arquivo).
+- **Stack pessoal do Ricardo**: WinThor BI (Oracle SQL), Filadelfia, Comercial GPC, Biblo (PWA familiar). Todos seguem padrão "APP_VERSION + cache-bust + footer R2".
+
+### Padrão visual que ele aprova
+
+- Cards `.r2-card` com `__head` + `__body` (padding 14px / 20px).
+- KPI grid 4 colunas no topo do dashboard, virando 2x2 em <1100px e 1 coluna em <480px.
+- Ribbon de stats horizontal em card único com `border-right` separando colunas.
+- Filtros sempre em filterbar no topo, persistentes via `R2A.filtros`.
+- Tabela com header navy-tint mono uppercase letter-spacing 0.08em.
+- Modal com header navy-tint, body 20px, footer alinhado direita.
+- Toast em pílula branca borda navy com dot colorido (não fundo cheio).
+
+### Onde ainda tenho perguntas em aberto
+
+- Quando entra o 2º cliente em produção? (destrava multi-tenant)
+- Quando você ativa Blaze + chave Anthropic? (destrava Fase 5 LLM)
+- O **cliente final** (GPC, Filadelfia) loga direto na ferramenta, ou só o operador R2? (impacta UX, permissões, multi-tenant)
+- O Processamento do Conciliador precisa de OFX real seu — você prometeu mandar mas não enviou ainda.
+- O PR no repo `pauloricardocsouza/fin` (branch `claude/hopeful-sinoussi-44d6bb`) está pushada e aguardando seu clique no link de criação.
+
+---
+
 ## PRÓXIMO PASSO CONCRETO (quando retomar)
 
 **Terminar a v0.28 · botão Renegociar:**
